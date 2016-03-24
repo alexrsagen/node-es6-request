@@ -1,0 +1,22 @@
+{
+  "name": "es6-request",
+  "version": "1.0.0",
+  "description": "HTTP Request library written in ES6 for Node.js",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexrsagen/node-es6-request.git"
+  },
+  "keywords": [
+    "request",
+    "es6",
+    "http",
+    "https"
+  ],
+  "author": "alexrsagen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alexrsagen/node-es6-request/issues"
+  },
+  "homepage": "https://github.com/alexrsagen/node-es6-request#readme"
+}
