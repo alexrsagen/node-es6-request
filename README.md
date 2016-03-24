@@ -50,7 +50,7 @@ You must run `Request`.start() before running this function. Directly writes to 
 
 ##### `Request`.send(`chunk`[, `encoding`][, `callback`])
 
-Directly writes to the request using [this](https://nodejs.org/api/http.html#http_request_write_chunk_encoding_callback) function from Node.js, then ends the request.
+Starts a request, then directly writes to the it using [this](https://nodejs.org/api/http.html#http_request_write_chunk_encoding_callback) function from Node.js, then ends the request.
 
 ##### `Request`.perform()
 
