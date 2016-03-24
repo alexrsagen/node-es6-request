@@ -132,6 +132,11 @@ class Request extends EventEmitter {
     perform() {
         return this.start().end();
     }
+
+    json(object) {
+        const data = qs.stringify(object);
+        return this.headers({"Content-Type": "x-www-form-urlencoded", "Content-Length": data.length}).send(data);
+    }
 }
 
 class HTTP {}

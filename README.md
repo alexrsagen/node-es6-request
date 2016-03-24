@@ -48,7 +48,7 @@ Translates the `object` into a key/value string and sends the request as `x-www-
 
 Directly writes to the request using [this](https://nodejs.org/api/http.html#http_request_write_chunk_encoding_callback) function from Node.js.
 
-##### `Request`.send(`chunk`)
+##### `Request`.send(`chunk`[, `encoding`][, `callback`])
 
 Directly writes to the request using [this](https://nodejs.org/api/http.html#http_request_write_chunk_encoding_callback) function from Node.js, then ends the request.
 
