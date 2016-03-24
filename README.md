@@ -46,7 +46,7 @@ Translates the `object` into a key/value string and sends the request as `x-www-
 
 ##### `Request`.write(`chunk`[, `encoding`][, `callback`])
 
-Directly writes to the request using [this](https://nodejs.org/api/http.html#http_request_write_chunk_encoding_callback) function from Node.js.
+You must run `Request`.start() before running this function. Directly writes to the request using [this](https://nodejs.org/api/http.html#http_request_write_chunk_encoding_callback) function from Node.js.
 
 ##### `Request`.send(`chunk`[, `encoding`][, `callback`])
 
@@ -55,6 +55,14 @@ Directly writes to the request using [this](https://nodejs.org/api/http.html#htt
 ##### `Request`.perform()
 
 Performs the request without writing anything. This function is automatically called by `Request`.done() and `Request`.fail().
+
+##### `Request`.start()
+
+Starts a request. After this function has been called, helper functions like `Request`.headers(), `Request`.header() and `Request`.query() will no longer work until the request has ended.
+
+##### `Request`.end()
+
+This function ends an already started request. It should only be called after using the `Request`.write() function.
 
 ## Usage
 
