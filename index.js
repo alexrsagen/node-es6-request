@@ -75,19 +75,19 @@ class Request extends EventEmitter {
     }
 
     done(callback) {
-        if (!this.res && ["GET", "DELETE", "HEAD", "OPTIONS"].indexOf(this.options.method) > -1) this.send();
+        if (!this.res) this.perform();
         if (this.body) return callback(this.res, this.body);
         return this.on("done", callback);
     }
 
     fail(callback) {
-        if (!this.res && ["GET", "DELETE", "HEAD", "OPTIONS"].indexOf(this.options.method) > -1) this.send();
+        if (!this.res) this.perform();
         if (this.error) return callback(this.error);
         return this.on("fail", callback);
     }
 
-    send(body) {
-        if (Object.keys(this.qs).length > 0) this.options.path = this.options.path + "?" + qs.stringify(this.qs);
+    start() {
+        if (Object.keys(this.qs).length > 0) this.options.path = this.url.pathname + "?" + qs.stringify(this.qs);
 
         // protocol switch
         switch (this.url.protocol) {
@@ -111,11 +111,26 @@ class Request extends EventEmitter {
             this.emit("fail", e);
         });
 
-        // end the request
-        body && req.write(body);
-        req.end();
-
+        this.req = req;
         return this;
+    }
+
+    write(body, encoding, callback) {
+        this.req.write(body, encoding, callback);
+        return this;
+    }
+
+    end() {
+        this.req.end();
+        return this;
+    }
+
+    send(body, encoding, callback) {
+        return this.start().write(body, encoding, callback).end();
+    }
+
+    perform() {
+        return this.start().end();
     }
 }
 
