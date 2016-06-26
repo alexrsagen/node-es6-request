@@ -15,7 +15,7 @@ var InvalidMethodError = new Error("Invalid method");
 InvalidMethodError.code = "invalid_method";
 
 class Request extends EventEmitter {
-    constructor(method, urlStr) {
+    constructor(method, urlStr, options) {
         super();
 
         // parse url string
@@ -28,6 +28,7 @@ class Request extends EventEmitter {
             method: method,
             headers: {}
         };
+        extend(this.options, options);
 
         this.qs = qs.parse(this.url.query) || {};
 
@@ -61,6 +62,11 @@ class Request extends EventEmitter {
 
     header(key, val) {
         this.options.headers[key] = val;
+        return this;
+    }
+
+    option(key, val) {
+        this.options[key] = val;
         return this;
     }
 
