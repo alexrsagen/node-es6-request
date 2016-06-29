@@ -4,7 +4,6 @@ const url = require("url");
 const http = require("http");
 const https = require("https");
 const qs = require("querystring");
-const extend = require("util")._extend;
 const methods = ["PUT", "POST", "PATCH", "DELETE", "GET", "HEAD", "OPTIONS"];
 
 var InvalidProtocolError = new Error("Invalid protocol");
@@ -37,7 +36,7 @@ class Request {
     }
 
     headers(obj) {
-        extend(this.options.headers, obj);
+        Object.assign(this.options.headers, obj);
         return this;
     }
 
@@ -47,7 +46,7 @@ class Request {
     }
 
     options(obj) {
-        extend(this.options, obj);
+        Object.assign(this.options, obj);
         return this;
     }
 
@@ -58,7 +57,7 @@ class Request {
 
     query(key, val) {
         if (typeof key == "object") {
-            extend(this.qs, key);
+            Object.assign(this.qs, key);
         } else {
             this.qs[key] = val;
         }
