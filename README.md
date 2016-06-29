@@ -18,15 +18,11 @@ Functions that return a new `Request` instance:
 
 ##### `Request`.done(`callback`)
 
-If the request has not already been performed, this function will perform the request. When the request is finished without error, `callback` is called with `res` and `body`.
-
-`res` is an object containing many things returned from the server, such as headers.
-
-`body` is a [Buffer](https://nodejs.org/api/buffer.html) containing the response from the server
+Removed. Use [Promise.prototype.then()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) instead. If `.then()` is called on `Request`, it will automatically `.perform()` the request first and return the [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise).
 
 ##### `Request`.fail(`callback`)
 
-If the request has not already been performed, this function will perform the request. When the request encounters an error, `callback` will be called with that error.
+Removed. Use [Promise.prototype.catch()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) instead. If `.catch()` is called on `Request`, it will automatically `.perform()` the request first and return the [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise).
 
 ##### `Request`.query(`key`/`object`, `val`)
 
@@ -39,6 +35,14 @@ Adds a header to the request by the name of `key` and the content of `val`.
 ##### `Request`.headers(`object`)
 
 Adds headers from a key/value object.
+
+##### `Request`.options(`key`, `val`)
+
+Adds options from a key/value object to the Node.js HTTP [options](https://nodejs.org/api/http.html#http_new_agent_options).
+
+##### `Request`.option(`key`, `val`)
+
+Adds an option to the Node.js HTTP [options](https://nodejs.org/api/http.html#http_new_agent_options).
 
 ##### `Request`.json(`object`)
 
@@ -54,7 +58,7 @@ Starts a request, then directly writes to the it using [this](https://nodejs.org
 
 ##### `Request`.perform()
 
-Performs the request without writing anything. This function is automatically called by `Request`.done() and `Request`.fail().
+Performs the request without writing anything (starts and ends the request). Returns `Request.end()`.
 
 ##### `Request`.start()
 
@@ -62,7 +66,7 @@ Starts a request. After this function has been called, helper functions like `Re
 
 ##### `Request`.end()
 
-This function ends an already started request. It should only be called after using the `Request`.write() function.
+This function ends an already started request. It should only be called after using the `Request`.write() function on a PUT/POST/PATCH request. On other requests like GET/HEAD/DELETE/OPTIONS you should use [Request.prototype.perform()](#requestperform). This function returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise).
 
 ## Usage
 
@@ -73,8 +77,8 @@ var http = require("es6-request");
 // you can exchange "get" with "head", "delete" or "options" here
 // they all have the exact same API
 http.get("https://raw.githubusercontent.com/alexrsagen/node-es6-request/master/README.md")
-.done((response, body) => {
-    console.log(body.toString());
+.then((body) => {
+    console.log(body);
     // should output this README file!
 });
 ```
@@ -88,7 +92,7 @@ var http = require("es6-request");
 // they all have the exact same API
 http.post("http://api.somewebsite.com/endpoint")
 .json({somekey: "somevalue"})
-.done((response, body) => {
+.then((body) => {
     // ...
 });
 ```
@@ -100,7 +104,7 @@ var http = require("es6-request");
 // they all have the exact same API
 http.post("http://api.somewebsite.com/endpoint")
 .send("i am a string, i will be sent to the server with a POST request.")
-.done((response, body) => {
+.then((body) => {
     // ...
 });
 ```
@@ -117,7 +121,7 @@ http.get("http://api.somewebsite.com/endpoint")
     "one": "two",
     "three": "four"
 })
-.done((response, body) => {
+.then((body) => {
     // ...
 });
 ```
@@ -132,13 +136,14 @@ var http = require("es6-request");
 //     "Header-Name": "header value",
 //     "Another-Header": "another value"
 // }
-http.get("http://api.somewebsite.com/endpoint")
-.header("Accept", "application/json")
+var instance = http.get("http://api.somewebsite.com/endpoint");
+instance.header("Accept", "application/json")
 .headers({
     "Header-Name": "header value",
     "Another-Header": "another value"
 })
-.done((response, body) => {
+.then((body) => {
+    const response = instance.res;
     // ...
 });
 ```

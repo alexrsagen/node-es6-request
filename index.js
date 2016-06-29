@@ -4,7 +4,6 @@ const url = require("url");
 const http = require("http");
 const https = require("https");
 const qs = require("querystring");
-const EventEmitter = require('events');
 const extend = require("util")._extend;
 const methods = ["PUT", "POST", "PATCH", "DELETE", "GET", "HEAD", "OPTIONS"];
 
@@ -14,10 +13,8 @@ InvalidProtocolError.code = "invalid_protocol";
 var InvalidMethodError = new Error("Invalid method");
 InvalidMethodError.code = "invalid_method";
 
-class Request extends EventEmitter {
-    constructor(method, urlStr, options) {
-        super();
-
+class Request {
+    constructor(method, urlStr) {
         // parse url string
         this.url = url.parse(urlStr);
 
@@ -28,7 +25,6 @@ class Request extends EventEmitter {
             method: method,
             headers: {}
         };
-        extend(this.options, options);
 
         this.qs = qs.parse(this.url.query) || {};
 
@@ -40,21 +36,6 @@ class Request extends EventEmitter {
         return this;
     }
 
-    // response handler
-    _res(res) {
-        this.res = res;
-
-        var body = [];
-        res.on("data", (chunk) => {
-            body.push(chunk);
-        });
-
-        res.on("end", () => {
-            this.body = Buffer.concat(body);
-            this.emit("done", this.res, this.body);
-        });
-    }
-
     headers(obj) {
         extend(this.options.headers, obj);
         return this;
@@ -62,6 +43,11 @@ class Request extends EventEmitter {
 
     header(key, val) {
         this.options.headers[key] = val;
+        return this;
+    }
+
+    options(obj) {
+        extend(this.options, obj);
         return this;
     }
 
@@ -80,18 +66,6 @@ class Request extends EventEmitter {
         return this;
     }
 
-    done(callback) {
-        if (!this.res) this.perform();
-        if (this.body) return callback(this.res, this.body);
-        return this.on("done", callback);
-    }
-
-    fail(callback) {
-        if (!this.res) this.perform();
-        if (this.error) return callback(this.error);
-        return this.on("fail", callback);
-    }
-
     start() {
         if (Object.keys(this.qs).length > 0) this.options.path = this.url.pathname + "?" + qs.stringify(this.qs);
 
@@ -99,12 +73,12 @@ class Request extends EventEmitter {
         switch (this.url.protocol) {
             case "https:":
                 this.options.port = this.url.port || 443;
-                var req = https.request(this.options, (res) => this._res(res));
+                this.req = https.request(this.options);
                 break;
 
             case "http:":
                 this.options.port = this.url.port || 80;
-                var req = http.request(this.options, (res) => this._res(res));
+                this.req = http.request(this.options);
                 break;
 
             default:
@@ -112,12 +86,6 @@ class Request extends EventEmitter {
                 break;
         }
 
-        req.on("error", (e) => {
-            this.error = e;
-            this.emit("fail", e);
-        });
-
-        this.req = req;
         return this;
     }
 
@@ -126,9 +94,35 @@ class Request extends EventEmitter {
         return this;
     }
 
+    then(onFailure, onSuccess) {
+        return this.perform().then(onFailure, onSuccess);
+    }
+
+    catch(onFailure) {
+        return this.perform().catch(onFailure);
+    }
+
     end() {
-        this.req.end();
-        return this;
+        return new Promise((resolve, reject) => {
+          this.req.on("response", (res) => {
+              this.res = res;
+              var body = [];
+
+              res.on("data", (chunk) => {
+                  body.push(chunk);
+              });
+
+              res.on("end", () => {
+                  resolve(Buffer.concat(body).toString());
+              });
+
+              res.on("error", (e) => {
+                  reject(e);
+              });
+          });
+
+          this.req.end();
+        });
     }
 
     send(body, encoding, callback) {
