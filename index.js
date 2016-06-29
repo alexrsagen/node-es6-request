@@ -51,6 +51,7 @@ class Request extends EventEmitter {
 
         res.on("end", () => {
             this.body = Buffer.concat(body);
+            this.res.body = this.body;
             this.emit("done", this.res, this.body);
         });
     }
@@ -90,6 +91,16 @@ class Request extends EventEmitter {
         if (!this.res) this.perform();
         if (this.error) return callback(this.error);
         return this.on("fail", callback);
+    }
+
+    promise() {
+        if (!this.res) this.perform();
+        if (this.body) return Promise.resolve(this.res);
+        if (this.error) return Promise.reject(this.error);
+        return new Promise((resolve, reject) => {
+            this.on("done", resolve);
+            this.on("fail", reject);
+        });
     }
 
     start() {
