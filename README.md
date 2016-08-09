@@ -36,7 +36,7 @@ Adds a header to the request by the name of `key` and the content of `val`.
 
 Adds headers from a key/value object.
 
-##### `Request`.options(`key`, `val`)
+##### `Request`.options(`object`)
 
 Adds options from a key/value object to the Node.js HTTP [options](https://nodejs.org/api/http.html#http_new_agent_options).
 
@@ -72,7 +72,7 @@ This function ends an already started request. It should only be called after us
 
 #### Simple GET Request
 ```javascript
-var http = require("es6-request");
+const http = require("es6-request");
 
 // you can exchange "get" with "head", "delete" or "options" here
 // they all have the exact same API
@@ -86,7 +86,7 @@ http.get("https://raw.githubusercontent.com/alexrsagen/node-es6-request/master/R
 #### POST Request
 The following example will send a x-www-form-urlencoded request to the server containing keys and values from the json object.
 ```javascript
-var http = require("es6-request");
+const http = require("es6-request");
 
 // you can exchange "post" with either "put" or "patch" here
 // they all have the exact same API
@@ -98,7 +98,7 @@ http.post("http://api.somewebsite.com/endpoint")
 ```
 This example will send a raw string to the server.
 ```javascript
-var http = require("es6-request");
+const http = require("es6-request");
 
 // you can exchange "post" with either "put" or "patch" here
 // they all have the exact same API
@@ -112,7 +112,7 @@ http.post("http://api.somewebsite.com/endpoint")
 #### Query string
 This works the same way with any other request type.
 ```javascript
-var http = require("es6-request");
+const http = require("es6-request");
 
 // sends a GET request to http://api.somewebsite.com/endpoint?this=that&one=two&three=four
 http.get("http://api.somewebsite.com/endpoint")
@@ -128,7 +128,7 @@ http.get("http://api.somewebsite.com/endpoint")
 
 ##### Headers
 ```javascript
-var http = require("es6-request");
+const http = require("es6-request");
 
 // Sends a GET request with these headers:
 // {
@@ -136,14 +136,14 @@ var http = require("es6-request");
 //     "Header-Name": "header value",
 //     "Another-Header": "another value"
 // }
-var instance = http.get("http://api.somewebsite.com/endpoint");
-instance.header("Accept", "application/json")
+http.get("http://api.somewebsite.com/endpoint");
+.header("Accept", "application/json")
 .headers({
     "Header-Name": "header value",
     "Another-Header": "another value"
 })
-.then((body) => {
-    const response = instance.res;
+.then((body, res) => {
+    console.log(res.headers);
     // ...
 });
 ```
