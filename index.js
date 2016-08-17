@@ -4,7 +4,9 @@ const url = require("url");
 const http = require("http");
 const https = require("https");
 const qs = require("querystring");
+const Duplex = require("stream").Duplex;
 const methods = ["PUT", "POST", "PATCH", "DELETE", "GET", "HEAD", "OPTIONS"];
+const writeMethods = ["PUT", "POST", "PATCH"];
 
 var InvalidProtocolError = new Error("Invalid protocol");
 InvalidProtocolError.code = "invalid_protocol";
@@ -12,138 +14,165 @@ InvalidProtocolError.code = "invalid_protocol";
 var InvalidMethodError = new Error("Invalid method");
 InvalidMethodError.code = "invalid_method";
 
-class Request {
-    constructor(method, urlStr) {
-        // parse url string
-        this.url = url.parse(urlStr);
+class Request extends Duplex {
+  constructor(method, urlStr) {
+    // initialize duplex stream
+    super()
 
-        // create base options object
-        this.options = {
-            hostname: this.url.host,
-            path: this.url.pathname,
-            method: method,
-            headers: {}
-        };
+    // parse url string
+    this.url = url.parse(urlStr);
 
-        this.qs = qs.parse(this.url.query) || {};
+    // create base options object
+    this.options = {
+      hostname: this.url.hostname,
+      path: this.url.pathname,
+      method: method,
+      headers: {}
+    };
 
-        // validate method
-        if (methods.indexOf(this.options.method) == -1) {
-            throw InvalidMethodError;
-        }
+    this.qs = qs.parse(this.url.query) || {};
 
-        return this;
+    // validate method
+    if (methods.indexOf(this.options.method) == -1) {
+      throw InvalidMethodError;
     }
 
-    headers(obj) {
-        Object.assign(this.options.headers, obj);
-        return this;
+    this.on("pipe", src => {
+      if (this._active) {
+        this.emit("error", new Error("You cannot pipe to this stream after starting the http request."));
+      }
+    });
+
+    return this;
+  }
+
+  headers(obj) {
+    Object.assign(this.options.headers, obj);
+    return this;
+  }
+
+  header(key, val) {
+    this.options.headers[key] = val;
+    return this;
+  }
+
+  options(obj) {
+    Object.assign(this.options, obj);
+    return this;
+  }
+
+  option(key, val) {
+    this.options[key] = val;
+    return this;
+  }
+
+  query(key, val) {
+    if (typeof key == "object") {
+      Object.assign(this.qs, key);
+    } else {
+      this.qs[key] = val;
     }
 
-    header(key, val) {
-        this.options.headers[key] = val;
-        return this;
+    return this;
+  }
+
+  start() {
+    if (Object.keys(this.qs).length > 0) this.options.path = this.url.pathname + "?" + qs.stringify(this.qs);
+
+    // protocol switch
+    switch (this.url.protocol) {
+      case "https:":
+        this.options.port = this.url.port || 443;
+        this.req = https.request(this.options);
+        this._started = true;
+        break;
+
+      case "http:":
+        this.options.port = this.url.port || 80;
+        this.req = http.request(this.options);
+        this._started = true;
+        break;
+
+      default:
+        throw InvalidProtocolError;
+        break;
     }
 
-    options(obj) {
-        Object.assign(this.options, obj);
-        return this;
-    }
+    return this;
+  }
 
-    option(key, val) {
-        this.options[key] = val;
-        return this;
-    }
+  then(onFailure, onSuccess) {
+    return this.perform().then(onFailure, onSuccess);
+  }
 
-    query(key, val) {
-        if (typeof key == "object") {
-            Object.assign(this.qs, key);
-        } else {
-            this.qs[key] = val;
-        }
+  catch(onFailure) {
+    return this.perform().catch(onFailure);
+  }
 
-        return this;
-    }
+  perform() {
+    return new Promise((resolve, reject) => {
+      if (!this._started) {
+        this.start();
+      }
 
-    start() {
-        if (Object.keys(this.qs).length > 0) this.options.path = this.url.pathname + "?" + qs.stringify(this.qs);
+      this._active = true;
 
-        // protocol switch
-        switch (this.url.protocol) {
-            case "https:":
-                this.options.port = this.url.port || 443;
-                this.req = https.request(this.options);
-                break;
+      this.req.on("response", (res) => {
+        this.res = res;
+        this.body = [];
 
-            case "http:":
-                this.options.port = this.url.port || 80;
-                this.req = http.request(this.options);
-                break;
-
-            default:
-                throw InvalidProtocolError;
-                break;
-        }
-
-        return this;
-    }
-
-    write(body, encoding, callback) {
-        this.req.write(body, encoding, callback);
-        return this;
-    }
-
-    then(onFailure, onSuccess) {
-        return this.perform().then(onFailure, onSuccess);
-    }
-
-    catch(onFailure) {
-        return this.perform().catch(onFailure);
-    }
-
-    end() {
-        return new Promise((resolve, reject) => {
-          this.req.on("response", (res) => {
-              this.res = res;
-              var body = [];
-
-              res.on("data", (chunk) => {
-                  body.push(chunk);
-              });
-
-              res.on("end", () => {
-                  resolve([Buffer.concat(body).toString(), res]);
-              });
-
-              res.on("error", (e) => {
-                  reject(e);
-              });
-          });
-
-          this.req.end();
+        res.on("data", (chunk) => {
+          this.push(chunk);
+          this.body.push(chunk);
         });
+
+        res.on("end", () => {
+          this._active = false;
+
+          this.push(null);
+          resolve([Buffer.concat(this.body).toString(), res]);
+        });
+
+        res.on("error", (e) => {
+          reject(e);
+        });
+      });
+
+      this.req.end();
+    });
+  }
+
+  write(chunk, encoding, callback) {
+    if (!this._started) {
+      this.start();
     }
 
-    send(body, encoding, callback) {
-        return this.start().write(body, encoding, callback).end();
-    }
+    this.req.write(chunk, encoding, callback);
+    return this;
+  }
 
-    perform() {
-        return this.start().end();
+  _read(size) {
+    if (!this._active) {
+      this.perform();
     }
+  }
 
-    json(object) {
-        const data = qs.stringify(object);
-        return this.headers({"Content-Type": "x-www-form-urlencoded", "Content-Length": data.length}).send(data);
-    }
+  send(body, encoding, callback) {
+    return this.write(body, encoding, callback).perform();
+  }
+
+  json(object) {
+    const data = qs.stringify(object);
+    return this.headers({"Content-Type": "x-www-form-urlencoded", "Content-Length": data.length}).send(data);
+  }
 }
 
 class HTTP {}
 
 methods.forEach((method) => {
-    HTTP[method.toLowerCase()] = (urlStr) => {
-        return new Request(method, urlStr);
-    }
+  HTTP[method.toLowerCase()] = (urlStr) => {
+    return new Request(method, urlStr);
+  }
 });
 
 module.exports = HTTP;
