@@ -142,7 +142,7 @@ http.get("http://api.somewebsite.com/endpoint");
     "Header-Name": "header value",
     "Another-Header": "another value"
 })
-.then((body, res) => {
+.then(([body, res]) => {
     console.log(res.headers);
     // ...
 });
