@@ -112,7 +112,7 @@ class Request {
               });
 
               res.on("end", () => {
-                  resolve(Buffer.concat(body).toString(), res);
+                  resolve([Buffer.concat(body).toString(), res]);
               });
 
               res.on("error", (e) => {
