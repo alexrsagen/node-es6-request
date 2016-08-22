@@ -151,11 +151,12 @@ class Request extends Duplex {
     return this;
   }
 
-  _read(size) {
-    if (!this._active) {
-      this.perform();
-    }
+  pipe(dest, opt) {
+    Duplex.prototype.pipe.call(this, dest, opt);
+    return this;
   }
+
+  _read(size) {}
 
   send(body, encoding, callback) {
     return this.write(body, encoding, callback).perform();

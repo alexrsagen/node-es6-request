@@ -164,5 +164,5 @@ This example pipes the GitHub logo to a file named `logo.png`.
 const request = require("es6-request");
 const fs = require("fs");
 
-request.get("https://github.com/images/modules/logos_page/GitHub-Mark.png").pipe(fs.createWriteStream("logo.png"));
+request.get("https://github.com/images/modules/logos_page/GitHub-Mark.png").pipe(fs.createWriteStream("logo.png")).perform();
 ```
