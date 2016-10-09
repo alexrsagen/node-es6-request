@@ -117,6 +117,10 @@ class Request extends Duplex {
 
       this._active = true;
 
+      this.req.on("error", (e) => {
+        reject(e);
+      });
+
       this.req.on("response", (res) => {
         this.res = res;
         this.body = [];
