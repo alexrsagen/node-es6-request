@@ -168,7 +168,7 @@ class Request extends Duplex {
 
   json(object) {
     const data = qs.stringify(object);
-    return this.headers({"Content-Type": "x-www-form-urlencoded", "Content-Length": data.length}).send(data);
+    return this.headers({"Content-Type": "application/x-www-form-urlencoded", "Content-Length": data.length}).send(data);
   }
 }
 
