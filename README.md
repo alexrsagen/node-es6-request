@@ -30,6 +30,14 @@ Adds a header to the request by the name of `key` and the content of `val`.
 
 Adds headers from a key/value object.
 
+##### `Request`.authBasic(`username`, `password`)
+
+Adds an `Authorization: Basic <token>` header to your request.
+
+##### `Request`.authBearer(`bearer`)
+
+Adds an `Authorization: Bearer <bearer>` header to your request.
+
 ##### `Request`.options(`object`)
 
 Adds options from a key/value object to the Node.js HTTP [options](https://nodejs.org/api/http.html#http_new_agent_options).
@@ -71,7 +79,7 @@ const request = require("es6-request");
 // you can exchange "get" with "head", "delete" or "options" here
 // they all have the exact same API
 request.get("https://raw.githubusercontent.com/alexrsagen/node-es6-request/master/README.md")
-.then((body) => {
+.then(([body, res]) => {
     console.log(body);
     // should output this README file!
 });
@@ -86,7 +94,7 @@ const request = require("es6-request");
 // they all have the exact same API
 request.post("http://api.somewebsite.com/endpoint")
 .json({somekey: "somevalue"})
-.then((body) => {
+.then(([body, res]) => {
     // ...
 });
 ```
@@ -98,7 +106,7 @@ const request = require("es6-request");
 // they all have the exact same API
 request.post("http://api.somewebsite.com/endpoint")
 .send("i am a string, i will be sent to the server with a POST request.")
-.then((body) => {
+.then(([body, res]) => {
     // ...
 });
 ```
@@ -115,7 +123,7 @@ request.get("http://api.somewebsite.com/endpoint")
     "one": "two",
     "three": "four"
 })
-.then((body) => {
+.then(([body, res]) => {
     // ...
 });
 ```

@@ -56,6 +56,14 @@ class Request extends Duplex {
     return this;
   }
 
+  authBasic(username, password) {
+    return this.header("Authorization", Buffer.from(String(username) + ":" + String(password), "utf8").toString("base64"));
+  }
+
+  authBearer(bearer) {
+    return this.header("Authorization", String(bearer));
+  }
+
   options(obj) {
     Object.assign(this.options, obj);
     return this;
