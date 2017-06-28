@@ -15,7 +15,7 @@ var InvalidMethodError = new Error("Invalid method");
 InvalidMethodError.code = "invalid_method";
 
 class Request extends Duplex {
-  constructor(method, urlStr) {
+  constructor(method, urlStr, options) {
     // initialize duplex stream
     super()
 
@@ -23,12 +23,13 @@ class Request extends Duplex {
     this.url = url.parse(urlStr);
 
     // create base options object
-    this.options = {
+    this.options = Object.assign({
       hostname: this.url.hostname,
       path: this.url.pathname,
       method: method,
-      headers: {}
-    };
+      headers: {},
+      bodyAsBuffer: false
+    }, options);
 
     this.qs = qs.parse(this.url.query) || {};
 
@@ -142,7 +143,11 @@ class Request extends Duplex {
           this._active = false;
 
           this.push(null);
-          resolve([Buffer.concat(this.body).toString(), res]);
+          if (this.options.bodyAsBuffer) {
+            resolve([Buffer.concat(this.body), res]);
+          } else {
+            resolve([Buffer.concat(this.body).toString(), res]);
+          }
         });
 
         res.on("error", (e) => {
@@ -183,8 +188,8 @@ class Request extends Duplex {
 class HTTP {}
 
 methods.forEach((method) => {
-  HTTP[method.toLowerCase()] = (urlStr) => {
-    return new Request(method, urlStr);
+  HTTP[method.toLowerCase()] = (urlStr, options) => {
+    return new Request(method, urlStr, options);
   }
 });
 
