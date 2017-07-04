@@ -4,7 +4,7 @@ const url = require("url");
 const http = require("http");
 const https = require("https");
 const qs = require("querystring");
-const Duplex = require("stream").Duplex;
+const {Duplex} = require("stream");
 const methods = ["PUT", "POST", "PATCH", "DELETE", "GET", "HEAD", "OPTIONS"];
 const writeMethods = ["PUT", "POST", "PATCH"];
 
@@ -14,10 +14,13 @@ InvalidProtocolError.code = "invalid_protocol";
 var InvalidMethodError = new Error("Invalid method");
 InvalidMethodError.code = "invalid_method";
 
+var WriteOnReadOnlyMethodError = new Error("Write on read-only method");
+WriteOnReadOnlyMethodError.code = "write_on_read_method";
+
 class Request extends Duplex {
   constructor(method, urlStr, options) {
     // initialize duplex stream
-    super()
+    super();
 
     // parse url string
     this.url = url.parse(urlStr);
@@ -28,7 +31,10 @@ class Request extends Duplex {
       path: this.url.pathname,
       method: method,
       headers: {},
-      bodyAsBuffer: false
+      custom: {
+        bodyAsBuffer: false,
+        getProgress: false
+      }
     }, options);
 
     this.qs = qs.parse(this.url.query) || {};
@@ -37,12 +43,6 @@ class Request extends Duplex {
     if (methods.indexOf(this.options.method) == -1) {
       throw InvalidMethodError;
     }
-
-    this.on("pipe", src => {
-      if (this._active) {
-        this.emit("error", new Error("You cannot pipe to this stream after starting the http request."));
-      }
-    });
 
     return this;
   }
@@ -86,6 +86,8 @@ class Request extends Duplex {
   }
 
   start() {
+    if (this._started) return this;
+
     if (Object.keys(this.qs).length > 0) this.options.path = this.url.pathname + "?" + qs.stringify(this.qs);
 
     // protocol switch
@@ -110,12 +112,18 @@ class Request extends Duplex {
     return this;
   }
 
-  then(onFailure, onSuccess) {
-    return this.perform().then(onFailure, onSuccess);
+  then(onSuccess, onFailure) {
+    return this.perform().then(onSuccess, onFailure);
   }
 
   catch(onFailure) {
     return this.perform().catch(onFailure);
+  }
+
+  _cleanup() {
+    this._active = false;
+    this._started = false;
+    this.req = null;
   }
 
   perform() {
@@ -126,31 +134,37 @@ class Request extends Duplex {
 
       this._active = true;
 
-      this.req.on("error", (e) => {
+      this.req.on("error", e => {
+        this._cleanup();
         reject(e);
       });
 
-      this.req.on("response", (res) => {
+      this.req.on("response", res => {
         this.res = res;
         this.body = [];
+        const responseLength = parseInt(res.headers['content-length']);
 
-        res.on("data", (chunk) => {
+        res.on("data", chunk => {
           this.push(chunk);
           this.body.push(chunk);
+          this.emit("data", chunk);
+          if (this.options.custom.getProgress && !isNaN(responseLength)) {
+            this.emit("progress", Buffer.concat(this.body).byteLength / responseLength);
+          }
         });
 
         res.on("end", () => {
-          this._active = false;
-
           this.push(null);
-          if (this.options.bodyAsBuffer) {
+          this._cleanup();
+          if (this.options.custom.bodyAsBuffer) {
             resolve([Buffer.concat(this.body), res]);
           } else {
             resolve([Buffer.concat(this.body).toString(), res]);
           }
         });
 
-        res.on("error", (e) => {
+        res.on("error", e => {
+          this._cleanup();
           reject(e);
         });
       });
@@ -160,6 +174,10 @@ class Request extends Duplex {
   }
 
   write(chunk, encoding, callback) {
+    if (!writeMethods.includes(this.options.method)) {
+      throw WriteOnReadOnlyMethodError;
+    }
+
     if (!this._started) {
       this.start();
     }
@@ -174,6 +192,9 @@ class Request extends Duplex {
   }
 
   _read(size) {}
+  _write(chunk, encoding, callback) {
+    return this.write(chunk, encoding, callback);
+  }
 
   send(body, encoding, callback) {
     return this.write(body, encoding, callback).perform();
@@ -187,7 +208,7 @@ class Request extends Duplex {
 
 class HTTP {}
 
-methods.forEach((method) => {
+methods.forEach(method => {
   HTTP[method.toLowerCase()] = (urlStr, options) => {
     return new Request(method, urlStr, options);
   }
