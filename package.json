@@ -1,6 +1,6 @@
 {
   "name": "es6-request",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "HTTP Request library written in ES6 for Node.js",
   "main": "index.js",
   "repository": {
@@ -11,7 +11,8 @@
     "request",
     "es6",
     "http",
-    "https"
+    "https",
+    "multipart"
   ],
   "author": "alexrsagen",
   "license": "MIT",

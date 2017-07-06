@@ -3,6 +3,8 @@
 const url = require("url");
 const http = require("http");
 const https = require("https");
+const crypto = require("crypto");
+const util = require("util");
 const qs = require("querystring");
 const {Duplex} = require("stream");
 const methods = ["PUT", "POST", "PATCH", "DELETE", "GET", "HEAD", "OPTIONS"];
@@ -52,8 +54,8 @@ class Request extends Duplex {
     return this;
   }
 
-  header(key, val) {
-    this.options.headers[key] = val;
+  header(key, value) {
+    this.options.headers[key] = value;
     return this;
   }
 
@@ -70,16 +72,16 @@ class Request extends Duplex {
     return this;
   }
 
-  option(key, val) {
-    this.options[key] = val;
+  option(key, value) {
+    this.options[key] = value;
     return this;
   }
 
-  query(key, val) {
-    if (typeof key == "object") {
+  query(key, value) {
+    if (Object(key) == key) {
       Object.assign(this.qs, key);
     } else {
-      this.qs[key] = val;
+      this.qs[key] = value;
     }
 
     return this;
@@ -202,9 +204,80 @@ class Request extends Duplex {
     return this.write(body, encoding, callback).perform();
   }
 
-  json(object) {
-    const data = qs.stringify(object);
-    return this.headers({"Content-Type": "application/x-www-form-urlencoded", "Content-Length": data.length}).send(data);
+  sendForm(form) {
+    if (Object(form) !== form) {
+      throw new Error("Argument passed to sendForm is not an object");
+    }
+
+    const body = qs.stringify(form);
+
+    return this.headers({
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Length": body.length
+    }).send(body);
+  }
+
+  sendMultipart(form, files, filesFieldNameFormat) {
+    if (form != null && Object(form) !== form) {
+      throw new Error("First argument (form) passed to sendMultipart is not an object");
+    }
+    if (files != null && Object(files) !== files) {
+      throw new Error("Second argument (files) passed to sendMultipart is not an object");
+    }
+
+    // define default file field name
+    filesFieldNameFormat = filesFieldNameFormat || "files[%i]";
+
+    // generate random multipart form boundary
+    const boundary = "----------------------------" + crypto.randomBytes(6).toString("hex");
+    let body = "";
+
+    // build multipart form body
+    if (form != null) {
+      Object.keys(form).forEach(fieldName => {
+        if (typeof fieldName !== "string") {
+          throw new Error("Field name is not a string");
+        }
+
+        body += boundary + "\n";
+        body += "MIME-Version: 1.0\n";
+        body += "Content-Transfer-Encoding: base64\n";
+        body += "Content-Disposition: form-data; name=" + JSON.stringify(fieldName) + "\n\n";
+        body += Buffer.from(form[fieldName]).toString("base64") + "\n";
+      });
+    }
+
+    // build multipart form body
+    if (files != null) {
+      Object.keys(files).forEach((fileName, fileIndex) => {
+        if (typeof fileName !== "string") {
+          throw new Error("File name is not a string");
+        }
+
+        body += boundary + "\n";
+        body += "MIME-Version: 1.0\n";
+        body += "Content-Transfer-Encoding: base64\n";
+        body += "Content-Disposition: form-data; name=" + JSON.stringify(util.format(filesFieldNameFormat, fileIndex)) + "; filename=" + JSON.stringify(fileName) + "\n\n";
+        body += Buffer.from(files[fileName]).toString("base64") + "\n";
+      });
+    }
+
+    // append final multipart form boundary
+    body += boundary + "--";
+
+    return this.headers({
+      "Content-Type": "multipart/form-data; boundary=" + boundary,
+      "Content-Length": body.length
+    }).send(body);
+  }
+
+  sendJSON(data) {
+    const body = JSON.stringify(data);
+
+    return this.headers({
+      "Content-Type": "application/json",
+      "Content-Length": data.length
+    }).send(body);
   }
 }
 

@@ -18,57 +18,123 @@ Functions that return a new `Request` instance:
 
 ##### `Request`
 
-##### `Request`.query(`key`/`object`, `val`)
+##### `Request`.query(`key`, `value`)
 
-Can be called with only one object as argument, or two arguments (key and value). This function adds to the query string of the `url` or creates a new query string that will be added to the `url` before performing the reuqest.
+Alternatively, **`Request`.query(`object`)**
 
-##### `Request`.header(`key`, `val`)
+* `key` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) Query string key
+* `value` &lt;any&gt; Query string value
+* `object` [&lt;Object&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) Query string key/value object
 
-Adds a header to the request by the name of `key` and the content of `val`.
+This function adds to the query string of the `url` or creates a new query string that will be added to the `url` before performing the reuqest.
 
-##### `Request`.headers(`object`)
+Returns `Request`
 
-Adds headers from a key/value object.
+##### `Request`.header(`key`, `value`)
+
+Alternatively, **`Request`.headers(`object`)**
+
+* `key` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) Header name
+* `value` &lt;any&gt; Header value
+* `object` [&lt;Object&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) Header key/value object
+
+Adds a header to the request by the name of `key` and the content of `val` or adds the key/value headers from `object`.
+
+Returns `Request`
 
 ##### `Request`.authBasic(`username`, `password`)
 
+* `username` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) Username
+* `password` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) Password
+
 Adds an `Authorization: Basic <token>` header to your request.
+
+Returns `Request`
 
 ##### `Request`.authBearer(`bearer`)
 
-Adds an `Authorization: Bearer <bearer>` header to your request.
+* `bearer` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) Bearer token
 
-##### `Request`.options(`object`)
+Adds an `Authorization: Bearer <bearer>` header to your request.
 
 Adds options from a key/value object to the Node.js HTTP [options](https://nodejs.org/api/http.html#http_new_agent_options).
 
-##### `Request`.option(`key`, `val`)
+Returns `Request`
 
-Adds an option to the Node.js HTTP [options](https://nodejs.org/api/http.html#http_new_agent_options).
+##### `Request`.option(`key`, `value`)
 
-##### `Request`.json(`object`)
+Alternatively, **`Request`.options(`object`)**
 
-Translates the `object` into a key/value string and sends the request as `x-www-form-urlencoded`.
+* `key` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) Option name
+* `value` &lt;any&gt; Option value
+* `object` [&lt;Object&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) Option key/value object
+
+Adds an option or a key/value object of options to the Node.js HTTP [options](https://nodejs.org/api/http.html#http_new_agent_options).
+
+Returns `Request`
+
+##### `Request`.sendForm(`form`)
+
+* `form` [&lt;Object&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) Form key/value object
+
+Transforms the `form` object into a querystring and sends the request as `application/x-www-form-urlencoded`.
+
+Returns a [&lt;Promise&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
+
+##### `Request`.sendMultipart(`form`, `files`)
+
+* `form` [&lt;Object&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) Form key/value object (field name/contents)
+* `files` [&lt;Object&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) Files key/value object (filename/contents)
+
+Transforms the `form` and `files` into multipart form fields and sends the request as `multipart/form-data`.
+
+Returns a [&lt;Promise&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
+
+##### `Request`.sendJSON(`data`)
+
+* `data` &lt;any&gt; Data that will be transformed into JSON
+
+Transforms the `data` into a JSON string and sends the request as `application/json`.
+
+Returns a [&lt;Promise&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 
 ##### `Request`.write(`chunk`[, `encoding`][, `callback`])
 
+* `chunk` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) | [&lt;Buffer&gt;](https://nodejs.org/dist/latest/docs/api/buffer.html#buffer_class_buffer)
+* `encoding` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)
+* `callback` [&lt;Function&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function)
+
 You must run `Request`.start() before running this function. Directly writes to the request using [this](https://nodejs.org/api/http.html#http_request_write_chunk_encoding_callback) function from Node.js.
+
+Returns `Request`
 
 ##### `Request`.send(`chunk`[, `encoding`][, `callback`])
 
+* `chunk` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) | [&lt;Buffer&gt;](https://nodejs.org/dist/latest/docs/api/buffer.html#buffer_class_buffer)
+* `encoding` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)
+* `callback` [&lt;Function&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function)
+
 Starts a request, then directly writes to the it using [this](https://nodejs.org/api/http.html#http_request_write_chunk_encoding_callback) function from Node.js, then performs the request.
+
+Returns a [&lt;Promise&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 
 ##### `Request`.start()
 
 Starts a request. After this function has been called, helper functions like `Request`.headers(), `Request`.header() and `Request`.query() will no longer work until the request has ended.
 
+Returns `Request`
+
 ##### `Request`.pipe(`destination`)
 
 Starts the request if it is not already started. Pipes the response chunks to the destination stream using [this](https://nodejs.org/api/stream.html#stream_readable_pipe_destination_options) function from Node.js, then performs the request.
 
+Returns `Request`
+
 ##### `Request`.perform()
 
 This function ends a request. It is called by other functions like [Request.send()](#requestsend) and [Request.pipe()](#requestpipe). This function returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise).
+
+Returns a [&lt;Promise&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 
 ## Usage
 
@@ -93,7 +159,9 @@ const request = require("es6-request");
 // you can exchange "post" with either "put" or "patch" here
 // they all have the exact same API
 request.post("http://api.somewebsite.com/endpoint")
-.json({somekey: "somevalue"})
+.sendForm({
+  somekey: "somevalue"
+})
 .then(([body, res]) => {
     // ...
 });
@@ -128,7 +196,7 @@ request.get("http://api.somewebsite.com/endpoint")
 });
 ```
 
-##### Headers
+#### Headers
 ```javascript
 const request = require("es6-request");
 
@@ -150,7 +218,7 @@ request.get("http://api.somewebsite.com/endpoint");
 });
 ```
 
-##### Pipes
+#### Pipes
 The following example POSTs all data you enter to STDIN to the local server we create, which then logs the data back to the console.
 ```javascript
 const request = require("es6-request");
@@ -173,4 +241,38 @@ const request = require("es6-request");
 const fs = require("fs");
 
 request.get("https://github.com/images/modules/logos_page/GitHub-Mark.png").pipe(fs.createWriteStream("logo.png")).perform();
+```
+
+#### Multipart forms
+The following example POSTs a field and a file to a server using `multipart/form-data`
+```javascript
+const request = require("es6-request");
+const fs = require("es6-fs");
+
+fs.readFile("logo.png")
+.then(contents =>
+  request.post("http://api.somewebsite.com/endpoint")
+  .sendMultipart({
+    somekey: "somevalue"
+  }, {
+    "logo.png": contents
+  })
+);
+```
+
+Sample multipart form body that gets sent to the server:
+```
+----------------------------151a08730e1f
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-Disposition: form-data; name="somekey"
+
+c29tZXZhbHVl
+----------------------------151a08730e1f
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-Disposition: form-data; name="files[0]"; filename="logo.png"
+
+iVBORw0KGgoAAAA(trimmed 19073 characters...)
+----------------------------151a08730e1f--
 ```
