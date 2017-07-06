@@ -132,7 +132,7 @@ Returns `Request`
 
 ##### `Request`.perform()
 
-This function ends a request. It is called by other functions like [Request.send()](#requestsend) and [Request.pipe()](#requestpipe). This function returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise).
+This function ends a request. It is called by other functions like [Request.send()](#requestsend) and [Request.pipe()](#requestpipe).
 
 Returns a [&lt;Promise&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 

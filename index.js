@@ -34,8 +34,7 @@ class Request extends Duplex {
       method: method,
       headers: {},
       custom: {
-        bodyAsBuffer: false,
-        getProgress: false
+        bodyAsBuffer: false
       }
     }, options);
 
@@ -138,6 +137,7 @@ class Request extends Duplex {
       this._active = true;
 
       this.req.on("error", e => {
+        this.emit("error", e);
         this.destroy();
         reject(e);
       });
@@ -148,18 +148,15 @@ class Request extends Duplex {
         let curLength = 0;
 
         res.on("data", chunk => {
-          this.push(chunk);
-          this.emit("readable");
-
+          this.emit("data", chunk);
           this.body.push(chunk);
-          if (this.options.custom.getProgress && !isNaN(responseLength)) {
+          if (!isNaN(responseLength)) {
             curLength += chunk.byteLength;
             this.emit("progress", curLength / responseLength);
           }
         });
 
         res.on("end", () => {
-          this.push(null);
           this.emit("end");
 
           if (this.options.custom.bodyAsBuffer) {
@@ -173,6 +170,7 @@ class Request extends Duplex {
         });
 
         res.on("error", e => {
+          this.emit("error", e);
           this.destroy();
           reject(e);
         });
@@ -197,6 +195,7 @@ class Request extends Duplex {
 
   pipe(dest, opt) {
     Duplex.prototype.pipe.call(this, dest, opt);
+    this._readStreamEnabled = true;
     return this;
   }
 
