@@ -122,10 +122,11 @@ class Request extends Duplex {
     return this.perform().catch(onFailure);
   }
 
-  _cleanup() {
+  _destroy() {
     this._active = false;
     this._started = false;
     this.req = null;
+    this.body = [];
   }
 
   perform() {
@@ -137,18 +138,19 @@ class Request extends Duplex {
       this._active = true;
 
       this.req.on("error", e => {
-        this._cleanup();
+        this.destroy();
         reject(e);
       });
 
       this.req.on("response", res => {
-        this.res = res;
         this.body = [];
         const responseLength = parseInt(res.headers['content-length']);
         let curLength = 0;
 
         res.on("data", chunk => {
           this.push(chunk);
+          this.emit("readable");
+
           this.body.push(chunk);
           this.emit("data", chunk);
           if (this.options.custom.getProgress && !isNaN(responseLength)) {
@@ -159,16 +161,20 @@ class Request extends Duplex {
 
         res.on("end", () => {
           this.push(null);
-          this._cleanup();
+          this.emit("end");
+
           if (this.options.custom.bodyAsBuffer) {
             resolve([Buffer.concat(this.body), res]);
           } else {
             resolve([Buffer.concat(this.body).toString(), res]);
           }
+
+          this.destroy();
+          this.emit("close");
         });
 
         res.on("error", e => {
-          this._cleanup();
+          this.destroy();
           reject(e);
         });
       });
