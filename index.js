@@ -152,7 +152,6 @@ class Request extends Duplex {
           this.emit("readable");
 
           this.body.push(chunk);
-          this.emit("data", chunk);
           if (this.options.custom.getProgress && !isNaN(responseLength)) {
             curLength += chunk.byteLength;
             this.emit("progress", curLength / responseLength);
