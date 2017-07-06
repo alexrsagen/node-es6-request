@@ -143,13 +143,15 @@ class Request extends Duplex {
         this.res = res;
         this.body = [];
         const responseLength = parseInt(res.headers['content-length']);
+        let curLength = 0;
 
         res.on("data", chunk => {
           this.push(chunk);
           this.body.push(chunk);
           this.emit("data", chunk);
           if (this.options.custom.getProgress && !isNaN(responseLength)) {
-            this.emit("progress", Buffer.concat(this.body).byteLength / responseLength);
+            curLength += chunk.byteLength;
+            this.emit("progress", curLength / responseLength);
           }
         });
 
