@@ -280,7 +280,7 @@ class Request extends Duplex {
 
     return this.headers({
       "Content-Type": "application/json",
-      "Content-Length": data.length
+      "Content-Length": body.length
     }).send(body);
   }
 }
