@@ -246,7 +246,7 @@ class Request extends Duplex {
         body += boundary + "\n";
         body += "MIME-Version: 1.0\n";
         body += "Content-Transfer-Encoding: base64\n";
-        body += "Content-Disposition: form-data; name=" + JSON.stringify(fieldName) + "\n\n";
+        body += "Content-Disposition: form-data; name=\"" + encodeURIComponent(fieldName) + "\"\n\n";
         body += Buffer.from(form[fieldName]).toString("base64") + "\n";
       });
     }
@@ -261,7 +261,7 @@ class Request extends Duplex {
         body += boundary + "\n";
         body += "MIME-Version: 1.0\n";
         body += "Content-Transfer-Encoding: base64\n";
-        body += "Content-Disposition: form-data; name=" + JSON.stringify(util.format(filesFieldNameFormat, fileIndex)) + "; filename=" + JSON.stringify(fileName) + "\n\n";
+        body += "Content-Disposition: form-data; name=\"" + encodeURIComponent(util.format(filesFieldNameFormat, fileIndex)) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\n\n";
         body += Buffer.from(files[fileName]).toString("base64") + "\n";
       });
     }
