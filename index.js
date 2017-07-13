@@ -121,7 +121,7 @@ class Request extends Duplex {
     return this.perform().catch(onFailure);
   }
 
-  _destroy() {
+  destroy() {
     this._active = false;
     this._started = false;
     this.req = null;
