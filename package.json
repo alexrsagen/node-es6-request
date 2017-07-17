@@ -1,6 +1,6 @@
 {
   "name": "es6-request",
-  "version": "2.2.7",
+  "version": "2.2.8",
   "description": "HTTP Request library written in ES6 for Node.js",
   "main": "index.js",
   "repository": {

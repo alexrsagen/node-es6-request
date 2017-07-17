@@ -81,10 +81,12 @@ Transforms the `form` object into a querystring and sends the request as `applic
 
 Returns a [&lt;Promise&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 
-##### `Request`.sendMultipart(`form`, `files`)
+##### `Request`.sendMultipart([`form`][, `files`][, `filesFieldNameFormat`][, `encoding`])
 
 * `form` [&lt;Object&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) Form key/value object (field name/contents)
 * `files` [&lt;Object&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object) Files key/value object (filename/contents)
+* `filesFieldNameFormat`[&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) Multipart file field name (defaults to `files[%i]`)
+* `encoding` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) Multipart entity Content-Transfer-Encoding (defaults to `utf8`)
 
 Transforms the `form` and `files` into multipart form fields and sends the request as `multipart/form-data`.
 

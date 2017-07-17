@@ -221,16 +221,26 @@ class Request extends Duplex {
     }).send(body);
   }
 
-  sendMultipart(form, files, filesFieldNameFormat) {
-    if (form != null && Object(form) !== form) {
+  sendMultipart(form, files, filesFieldNameFormat, encoding) {
+    if (form && Object(form) !== form) {
       throw new Error("First argument (form) passed to sendMultipart is not an object");
     }
-    if (files != null && Object(files) !== files) {
+    if (files && Object(files) !== files) {
       throw new Error("Second argument (files) passed to sendMultipart is not an object");
+    }
+    if (filesFieldNameFormat && typeof filesFieldNameFormat !== "string") {
+      throw new Error("Third argument (filesFieldNameFormat) passed to sendMultipart is not a string");
+    }
+    if (encoding && (typeof encoding !== "string" || !["base64", "utf8", "utf-8"].includes(encoding.toLowerCase()))) {
+      throw new Error("Fourth argument (encoding) passed to sendMultipart is not valid");
     }
 
     // define default file field name
     filesFieldNameFormat = filesFieldNameFormat || "files[%i]";
+
+    // define default encoding
+    encoding = encoding || "utf8";
+    const transferEncoding = (["utf8", "utf-8"].includes(encoding) ? "binary" : encoding);
 
     // generate random multipart form boundary
     const boundary = "----------------------------" + crypto.randomBytes(6).toString("hex");
@@ -245,9 +255,9 @@ class Request extends Duplex {
 
         body += boundary + "\n";
         body += "MIME-Version: 1.0\n";
-        body += "Content-Transfer-Encoding: base64\n";
+        body += "Content-Transfer-Encoding: " + transferEncoding + "\n";
         body += "Content-Disposition: form-data; name=\"" + encodeURIComponent(fieldName) + "\"\n\n";
-        body += Buffer.from(form[fieldName]).toString("base64") + "\n";
+        body += Buffer.from(form[fieldName]).toString(encoding) + "\n";
       });
     }
 
@@ -260,9 +270,9 @@ class Request extends Duplex {
 
         body += boundary + "\n";
         body += "MIME-Version: 1.0\n";
-        body += "Content-Transfer-Encoding: base64\n";
+        body += "Content-Transfer-Encoding: " + transferEncoding + "\n";
         body += "Content-Disposition: form-data; name=\"" + encodeURIComponent(util.format(filesFieldNameFormat, fileIndex)) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\n\n";
-        body += Buffer.from(files[fileName]).toString("base64") + "\n";
+        body += Buffer.from(files[fileName]).toString(encoding) + "\n";
       });
     }
 
