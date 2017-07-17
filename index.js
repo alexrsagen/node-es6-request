@@ -253,7 +253,7 @@ class Request extends Duplex {
           throw new Error("Field name is not a string");
         }
 
-        body += boundary + "\n";
+        body += "--" + boundary + "\n";
         body += "MIME-Version: 1.0\n";
         body += "Content-Transfer-Encoding: " + transferEncoding + "\n";
         body += "Content-Disposition: form-data; name=\"" +
@@ -269,7 +269,7 @@ class Request extends Duplex {
           throw new Error("File name is not a string");
         }
 
-        body += boundary + "\n";
+        body += "--" + boundary + "\n";
         body += "MIME-Version: 1.0\n";
         body += "Content-Transfer-Encoding: " + transferEncoding + "\n";
         body += "Content-Disposition: form-data; name=\"" +
@@ -283,7 +283,7 @@ class Request extends Duplex {
     }
 
     // append final multipart form boundary
-    body += boundary + "--";
+    body += "--" + boundary + "--";
 
     return this.headers({
       "Content-Type": "multipart/form-data; boundary=" + boundary,
