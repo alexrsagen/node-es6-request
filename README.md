@@ -258,7 +258,7 @@ fs.readFile("logo.png")
     somekey: "somevalue"
   }, {
     "logo.png": contents
-  })
+  }, "files[%i]", "base64")
 );
 ```
 

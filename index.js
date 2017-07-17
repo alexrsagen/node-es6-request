@@ -256,7 +256,8 @@ class Request extends Duplex {
         body += boundary + "\n";
         body += "MIME-Version: 1.0\n";
         body += "Content-Transfer-Encoding: " + transferEncoding + "\n";
-        body += "Content-Disposition: form-data; name=\"" + encodeURIComponent(fieldName) + "\"\n\n";
+        body += "Content-Disposition: form-data; name=\"" +
+          encodeURIComponent(fieldName) + "\"\n\n";
         body += Buffer.from(form[fieldName]).toString(encoding) + "\n";
       });
     }
@@ -271,7 +272,12 @@ class Request extends Duplex {
         body += boundary + "\n";
         body += "MIME-Version: 1.0\n";
         body += "Content-Transfer-Encoding: " + transferEncoding + "\n";
-        body += "Content-Disposition: form-data; name=\"" + encodeURIComponent(util.format(filesFieldNameFormat, fileIndex)) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\n\n";
+        body += "Content-Disposition: form-data; name=\"" +
+          encodeURIComponent((
+            filesFieldNameFormat.includes("%") ? 
+              util.format(filesFieldNameFormat, fileIndex) : 
+              filesFieldNameFormat
+            )) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\n\n";
         body += Buffer.from(files[fileName]).toString(encoding) + "\n";
       });
     }
