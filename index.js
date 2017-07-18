@@ -219,7 +219,7 @@ class Request extends Duplex {
 
     return this.headers({
       "Content-Type": "application/x-www-form-urlencoded",
-      "Content-Length": body.length
+      "Content-Length": body.length + 1
     }).send(body, "utf8");
   }
 
@@ -325,7 +325,7 @@ class Request extends Duplex {
 
     return this.headers({
       "Content-Type": "application/json",
-      "Content-Length": body.length
+      "Content-Length": body.length + 1
     }).send(body, "utf8");
   }
 }
