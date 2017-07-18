@@ -606,7 +606,6 @@
 	".webapp": "x-web-app-manifest+json",
 	".7z": "application/x-7z-compressed",
 	".rar": "application/x-rar-compressed",
-
 	".aac": "audio/x-aac",
 	".adp": "audio/adpcm",
 	".aif": "audio/x-aiff",
@@ -643,7 +642,6 @@
 	".wav": "audio/x-wav",
 	".wax": "audio/x-ms-wax",
 	".wma": "audio/x-ms-wma",
-
 	".cff": "font/collection",
 	".otf": "font/opentype",
 	".sfnt": "font/sfnt",
@@ -651,7 +649,6 @@
 	".ttf": "font/ttf",
 	".woff": "font/woff",
 	".woff2": "font/woff2",
-
 	".bmp": "image/bmp",
 	".btif": "image/prs.btif",
 	".cgm": "image/cgm",
@@ -699,13 +696,11 @@
 	".xif": "image/vnd.xiff",
 	".xpm": "image/x-xpixmap",
 	".xwd": "image/x-xwindowdump",
-
 	".eml": "message/rfc822",
 	".mht": "message/rfc822",
 	".mhtml": "message/rfc822",
 	".mime": "message/rfc822",
 	".nws": "message/rfc822",
-
 	".dwf": "model/vnd.dwf",
 	".gdl": "model/vnd.gdl",
 	".gtw": "model/vnd.gtw",
@@ -718,7 +713,6 @@
 	".vrml": "model/vrml",
 	".vtu": "model/vnd.vtu",
 	".wrl": "model/vrml",
-
 	".3dml": "text/vnd.in3d.3dml",
 	".asm": "text/x-asm",
 	".c": "text/x-c",
@@ -785,7 +779,6 @@
 	".wml": "text/vnd.wap.wml",
 	".wmls": "text/vnd.wap.wmlscript",
 	".appcache": "text/cache-manifest",
-
 	".3g2": "video/3gpp2",
 	".3gp": "video/3gpp",
 	".3gpp": "video/3gpp",
@@ -830,13 +823,11 @@
 	".mkv": "video/x-matroska",
 	".mk3d": "video/x-matroska",
 	".mks": "video/x-matroska",
-
 	".cdx": "chemical/x-cdx",
 	".cif": "chemical/x-cif",
 	".cmdf": "chemical/x-cmdf",
 	".cml": "chemical/x-cml",
 	".csml": "chemical/x-csml",
 	".xyz": "chemical/x-xyz",
-
-	".ice": "x-conference/x-cooltalk",
+	".ice": "x-conference/x-cooltalk"
 }
