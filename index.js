@@ -9,6 +9,9 @@ const qs = require("querystring");
 const {Duplex} = require("stream");
 const methods = ["PUT", "POST", "PATCH", "DELETE", "GET", "HEAD", "OPTIONS"];
 const writeMethods = ["PUT", "POST", "PATCH"];
+const mime = {
+
+};
 
 var InvalidProtocolError = new Error("Invalid protocol");
 InvalidProtocolError.code = "invalid_protocol";
@@ -243,7 +246,7 @@ class Request extends Duplex {
     const transferEncoding = (["utf8", "utf-8", "UTF8", "UTF-8"].includes(encoding) ? "default" : encoding);
 
     // generate random multipart form boundary
-    const boundary = "----------------------------" + crypto.randomBytes(6).toString("hex");
+    const boundary = "--------------------------" + crypto.randomBytes(6).toString("hex");
     let body = Buffer.alloc(0);
 
     // build multipart form body
@@ -253,13 +256,13 @@ class Request extends Duplex {
           throw new Error("Field name is not a string");
         }
 
-        let headers = "--" + boundary + "\n";
+        let headers = "--" + boundary + "\r\n";
         if (transferEncoding != "default") {
-          headers += "MIME-Version: 1.0\n";
-          headers += "Content-Transfer-Encoding: " + transferEncoding + "\n";
+          headers += "MIME-Version: 1.0\r\n";
+          headers += "Content-Transfer-Encoding: " + transferEncoding + "\r\n";
         }
         headers += "Content-Disposition: form-data; name=\"" +
-          encodeURIComponent(fieldName) + "\"\n\n";
+          encodeURIComponent(fieldName) + "\"\r\n\r\n";
 
         body = Buffer.concat([
           body,
@@ -267,7 +270,7 @@ class Request extends Duplex {
           transferEncoding != "default" ?
             Buffer.from(Buffer.from(form[fieldName]).toString(encoding), "utf8") :
             Buffer.from(form[fieldName]),
-          Buffer.from("\n", "utf8")
+          Buffer.from("\r\n", "utf8")
         ]);
       });
     }
@@ -279,17 +282,17 @@ class Request extends Duplex {
           throw new Error("File name is not a string");
         }
 
-        let headers = "--" + boundary + "\n";
+        let headers = "--" + boundary + "\r\n";
         if (transferEncoding != "default") {
-          headers += "MIME-Version: 1.0\n";
-          headers += "Content-Transfer-Encoding: " + transferEncoding + "\n";
+          headers += "MIME-Version: 1.0\r\n";
+          headers += "Content-Transfer-Encoding: " + transferEncoding + "\r\n";
         }
         headers += "Content-Disposition: form-data; name=\"" +
           encodeURIComponent((
             filesFieldNameFormat.includes("%") ? 
               util.format(filesFieldNameFormat, fileIndex) : 
               filesFieldNameFormat
-            )) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\n\n";
+            )) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\r\n\r\n";
 
         body = Buffer.concat([
           body,
@@ -297,7 +300,7 @@ class Request extends Duplex {
           transferEncoding != "default" ?
             Buffer.from(Buffer.from(files[fileName]).toString(encoding), "utf8") :
             Buffer.from(files[fileName]),
-          Buffer.from("\n", "utf8")
+          Buffer.from("\r\n", "utf8")
         ]);
       });
     }
