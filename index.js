@@ -220,7 +220,7 @@ class Request extends Duplex {
     return this.headers({
       "Content-Type": "application/x-www-form-urlencoded",
       "Content-Length": body.length
-    }).send(body);
+    }).send(body, "utf8");
   }
 
   sendMultipart(form, files, filesFieldNameFormat, encoding) {
@@ -326,7 +326,7 @@ class Request extends Duplex {
     return this.headers({
       "Content-Type": "application/json",
       "Content-Length": body.length
-    }).send(body);
+    }).send(body, "utf8");
   }
 }
 
