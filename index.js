@@ -231,7 +231,7 @@ class Request extends Duplex {
     if (filesFieldNameFormat && typeof filesFieldNameFormat !== "string") {
       throw new Error("Third argument (filesFieldNameFormat) passed to sendMultipart is not a string");
     }
-    if (encoding && (typeof encoding !== "string" || !["base64", "utf8", "utf-8"].includes(encoding.toLowerCase()))) {
+    if (encoding && (typeof encoding !== "string" || !["base64", "BASE64", "utf8", "UTF8", "utf-8", "UTF-8"].includes(encoding))) {
       throw new Error("Fourth argument (encoding) passed to sendMultipart is not valid");
     }
 
@@ -240,11 +240,11 @@ class Request extends Duplex {
 
     // define default encoding
     encoding = encoding || "utf8";
-    const transferEncoding = (["utf8", "utf-8"].includes(encoding) ? "binary" : encoding);
+    const transferEncoding = (["utf8", "utf-8", "UTF8", "UTF-8"].includes(encoding) ? "default" : encoding);
 
     // generate random multipart form boundary
     const boundary = "----------------------------" + crypto.randomBytes(6).toString("hex");
-    let body = "";
+    let body = Buffer.alloc(0);
 
     // build multipart form body
     if (form != null) {
@@ -253,12 +253,22 @@ class Request extends Duplex {
           throw new Error("Field name is not a string");
         }
 
-        body += "--" + boundary + "\n";
-        body += "MIME-Version: 1.0\n";
-        body += "Content-Transfer-Encoding: " + transferEncoding + "\n";
-        body += "Content-Disposition: form-data; name=\"" +
+        let headers = "--" + boundary + "\n";
+        if (transferEncoding != "default") {
+          headers += "MIME-Version: 1.0\n";
+          headers += "Content-Transfer-Encoding: " + transferEncoding + "\n";
+        }
+        headers += "Content-Disposition: form-data; name=\"" +
           encodeURIComponent(fieldName) + "\"\n\n";
-        body += Buffer.from(form[fieldName]).toString(encoding) + "\n";
+
+        body = Buffer.concat([
+          body,
+          Buffer.from(headers, "utf8"),
+          transferEncoding != "default" ?
+            Buffer.from(Buffer.from(form[fieldName]).toString(encoding), "utf8") :
+            Buffer.from(form[fieldName]),
+          Buffer.from("\n", "utf8")
+        ]);
       });
     }
 
@@ -269,25 +279,38 @@ class Request extends Duplex {
           throw new Error("File name is not a string");
         }
 
-        body += "--" + boundary + "\n";
-        body += "MIME-Version: 1.0\n";
-        body += "Content-Transfer-Encoding: " + transferEncoding + "\n";
-        body += "Content-Disposition: form-data; name=\"" +
+        let headers = "--" + boundary + "\n";
+        if (transferEncoding != "default") {
+          headers += "MIME-Version: 1.0\n";
+          headers += "Content-Transfer-Encoding: " + transferEncoding + "\n";
+        }
+        headers += "Content-Disposition: form-data; name=\"" +
           encodeURIComponent((
             filesFieldNameFormat.includes("%") ? 
               util.format(filesFieldNameFormat, fileIndex) : 
               filesFieldNameFormat
             )) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\n\n";
-        body += Buffer.from(files[fileName]).toString(encoding) + "\n";
+
+        body = Buffer.concat([
+          body,
+          Buffer.from(headers, "utf8"),
+          transferEncoding != "default" ?
+            Buffer.from(Buffer.from(files[fileName]).toString(encoding), "utf8") :
+            Buffer.from(files[fileName]),
+          Buffer.from("\n", "utf8")
+        ]);
       });
     }
 
     // append final multipart form boundary
-    body += "--" + boundary + "--";
+    body = Buffer.concat([
+      body,
+      Buffer.from("--" + boundary + "--", "utf8")
+    ]);
 
     return this.headers({
       "Content-Type": "multipart/form-data; boundary=" + boundary,
-      "Content-Length": body.length
+      "Content-Length": body.byteLength
     }).send(body);
   }
 
