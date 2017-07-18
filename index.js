@@ -5,13 +5,12 @@ const http = require("http");
 const https = require("https");
 const crypto = require("crypto");
 const util = require("util");
+const path = require("path");
 const qs = require("querystring");
 const {Duplex} = require("stream");
 const methods = ["PUT", "POST", "PATCH", "DELETE", "GET", "HEAD", "OPTIONS"];
 const writeMethods = ["PUT", "POST", "PATCH"];
-const mime = {
-
-};
+const mime = require("./mime.json");
 
 var InvalidProtocolError = new Error("Invalid protocol");
 InvalidProtocolError.code = "invalid_protocol";
@@ -282,11 +281,15 @@ class Request extends Duplex {
           throw new Error("File name is not a string");
         }
 
+        const fileExt = path.extname(fileName).toLowerCase();
+        const mimeType = mime.hasOwnProperty(fileExt) ? mime[fileExt] : "application/octet-stream";
+
         let headers = "--" + boundary + "\r\n";
         if (transferEncoding != "default") {
           headers += "MIME-Version: 1.0\r\n";
           headers += "Content-Transfer-Encoding: " + transferEncoding + "\r\n";
         }
+        headers += "Content-Type: " + mimeType + "; charset=utf-8\r\n";
         headers += "Content-Disposition: form-data; name=\"" +
           encodeURIComponent((
             filesFieldNameFormat.includes("%") ? 
