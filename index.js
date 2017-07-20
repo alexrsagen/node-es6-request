@@ -215,12 +215,12 @@ class Request extends Duplex {
       throw new Error("Argument passed to sendForm is not an object");
     }
 
-    const body = qs.stringify(form);
+    const body = Buffer.from(qs.stringify(form), "utf8");
 
     return this.headers({
       "Content-Type": "application/x-www-form-urlencoded",
-      "Content-Length": body.length + 1
-    }).send(body, "utf8");
+      "Content-Length": body.byteLength
+    }).send(body);
   }
 
   sendMultipart(form, files, filesFieldNameFormat, encoding) {
@@ -321,12 +321,12 @@ class Request extends Duplex {
   }
 
   sendJSON(data) {
-    const body = JSON.stringify(data);
+    const body = Buffer.from(JSON.stringify(data), "utf8");
 
     return this.headers({
       "Content-Type": "application/json",
-      "Content-Length": body.length + 1
-    }).send(body, "utf8");
+      "Content-Length": body.byteLength
+    }).send(body);
   }
 }
 
