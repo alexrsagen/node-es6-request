@@ -140,7 +140,7 @@ class Request extends Duplex {
 
       this.req.on("error", e => {
         this.emit("error", e);
-        this.destroy();
+        this._destroy();
         reject(e);
       });
 
@@ -167,13 +167,13 @@ class Request extends Duplex {
             resolve([Buffer.concat(this.body).toString(), res]);
           }
 
-          this.destroy();
+          this._destroy();
           this.emit("close");
         });
 
         res.on("error", e => {
           this.emit("error", e);
-          this.destroy();
+          this._destroy();
           reject(e);
         });
       });
