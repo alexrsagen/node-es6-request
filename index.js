@@ -7,7 +7,7 @@ const crypto = require("crypto");
 const util = require("util");
 const path = require("path");
 const qs = require("querystring");
-const {Duplex} = require("stream");
+const stream = require("stream");
 const methods = ["PUT", "POST", "PATCH", "DELETE", "GET", "HEAD", "OPTIONS"];
 const writeMethods = ["PUT", "POST", "PATCH"];
 const mime = require("./mime.json");
@@ -21,321 +21,442 @@ InvalidMethodError.code = "invalid_method";
 var WriteOnReadOnlyMethodError = new Error("Write on read-only method");
 WriteOnReadOnlyMethodError.code = "write_on_read_method";
 
-class Request extends Duplex {
-  constructor(method, urlStr, options) {
-    // initialize duplex stream
-    super();
+class ES6Request extends stream.Duplex {
+    constructor(method, urlStr, options) {
+        // validate arguments
+        if (typeof method !== "string") {
+            throw new TypeError("Invalid type for argument \"method\"");
+        }
+        if (!methods.includes(method)) {
+            throw InvalidMethodError;
+        }
+        if (typeof urlStr !== "string") {
+            throw new TypeError("Invalid type for argument \"urlStr\"");
+        }
+        if (typeof options !== "undefined" && options !== undefined &&
+            (typeof options !== "object" || Array.isArray(options))) {
+            throw new TypeError("Invalid type for argument \"options\"");
+        }
 
-    // parse url string
-    this.url = url.parse(urlStr);
+        // initialize duplex stream
+        super();
 
-    // create base options object
-    this.options = Object.assign({
-      hostname: this.url.hostname,
-      path: this.url.pathname,
-      method: method,
-      headers: {},
-      custom: {
-        bodyAsBuffer: false
-      }
-    }, options);
+        // parse url string
+        this.url = url.parse(urlStr);
 
-    this.qs = qs.parse(this.url.query) || {};
+        // create base options object
+        this._options = Object.assign({
+            hostname: this.url.hostname,
+            path: this.url.pathname,
+            method: method,
+            headers: {},
+            custom: {
+                bodyAsBuffer: false
+            }
+        }, options);
 
-    // validate method
-    if (methods.indexOf(this.options.method) == -1) {
-      throw InvalidMethodError;
+        this.qs = qs.parse(this.url.query) || {};
+
+        return this;
+    }
+    
+    headers(obj) {
+        // validate arguments
+        if (typeof obj !== "object" || Array.isArray(obj)) {
+            throw new TypeError("Invalid type for argument \"obj\"");
+        }
+
+        Object.assign(this._options.headers, obj);
+        return this;
+    }
+    
+    header(key, value) {
+        // validate arguments
+        if (typeof key !== "string") {
+            throw new TypeError("Invalid type for argument \"key\"");
+        }
+        if (typeof value !== "number" && typeof value !== "string" && (typeof value !== "object" && Array.isArray(value)) && typeof value !== "undefined") {
+            throw new TypeError("Invalid type for argument \"value\"");
+        }
+
+        this._options.headers[key] = value;
+        return this;
+    }
+    
+    authBasic(username, password) {
+        // validate arguments
+        if (typeof username !== "string") {
+            throw new TypeError("Invalid type for argument \"username\"");
+        }
+        if (typeof password !== "string") {
+            throw new TypeError("Invalid type for argument \"password\"");
+        }
+
+        return this.header("Authorization", "Basic " + Buffer.from(username + ":" + password, "utf8").toString("base64"));
+    }
+    
+    authBearer(bearer) {
+        // validate arguments
+        if (typeof bearer !== "string") {
+            throw new TypeError("Invalid type for argument \"bearer\"");
+        }
+
+        return this.header("Authorization", "Bearer " + bearer);
+    }
+    
+    options(obj) {
+        // validate arguments
+        if (typeof obj !== "object" || Array.isArray(obj)) {
+            throw new TypeError("Invalid type for argument \"obj\"");
+        }
+
+        Object.assign(this._options, obj);
+        return this;
     }
 
-    return this;
-  }
+    option(key, value) {
+        // validate arguments
+        if (typeof key !== "string") {
+            throw new TypeError("Invalid type for argument \"key\"");
+        }
 
-  headers(obj) {
-    Object.assign(this.options.headers, obj);
-    return this;
-  }
+        this._options[key] = value;
+        return this;
+    }
+    
+    query(key, value) {
+        // validate arguments
+        if (typeof key !== "string") {
+            throw new TypeError("Invalid type for argument \"key\"");
+        }
+        if (typeof value !== "string") {
+            throw new TypeError("Invalid type for argument \"value\"");
+        }
 
-  header(key, value) {
-    this.options.headers[key] = value;
-    return this;
-  }
+        if (Object(key) == key) {
+            Object.assign(this.qs, key);
+        } else {
+            this.qs[key] = value;
+        }
 
-  authBasic(username, password) {
-    return this.header("Authorization", "Basic " + Buffer.from(String(username) + ":" + String(password), "utf8").toString("base64"));
-  }
+        return this;
+    }
+    
+    start() {
+        if (this._started) return this;
 
-  authBearer(bearer) {
-    return this.header("Authorization", "Bearer " + String(bearer));
-  }
+        if (Object.keys(this.qs).length > 0) this._options.path = this.url.pathname + "?" + qs.stringify(this.qs);
 
-  options(obj) {
-    Object.assign(this.options, obj);
-    return this;
-  }
+        // protocol switch
+        switch (this.url.protocol) {
+            case "https:":
+            this._options.port = this.url.port || 443;
+            this.req = https.request(this._options);
+            this._started = true;
+            break;
 
-  option(key, value) {
-    this.options[key] = value;
-    return this;
-  }
+            case "http:":
+            this._options.port = this.url.port || 80;
+            this.req = http.request(this._options);
+            this._started = true;
+            break;
 
-  query(key, value) {
-    if (Object(key) == key) {
-      Object.assign(this.qs, key);
-    } else {
-      this.qs[key] = value;
+            default:
+            throw InvalidProtocolError;
+            break;
+        }
+
+        return this;
     }
 
-    return this;
-  }
+    then(onSuccess, onFailure) {
+        // validate arguments
+        if (typeof onSuccess !== "undefined" &&
+            onSuccess !== undefined &&
+            typeof onSuccess !== "function") {
+            throw new TypeError("Invalid type for argument \"onSuccess\"");
+        }
+        if (typeof onFailure !== "undefined" &&
+            onFailure !== undefined &&
+            typeof onFailure !== "function") {
+            throw new TypeError("Invalid type for argument \"onFailure\"");
+        }
 
-  start() {
-    if (this._started) return this;
-
-    if (Object.keys(this.qs).length > 0) this.options.path = this.url.pathname + "?" + qs.stringify(this.qs);
-
-    // protocol switch
-    switch (this.url.protocol) {
-      case "https:":
-        this.options.port = this.url.port || 443;
-        this.req = https.request(this.options);
-        this._started = true;
-        break;
-
-      case "http:":
-        this.options.port = this.url.port || 80;
-        this.req = http.request(this.options);
-        this._started = true;
-        break;
-
-      default:
-        throw InvalidProtocolError;
-        break;
+        return this.perform().then(onSuccess, onFailure);
     }
 
-    return this;
-  }
+    catch (onFailure) {
+        // validate arguments
+        if (typeof onFailure !== "undefined" &&
+            onFailure !== undefined &&
+            typeof onFailure !== "function") {
+            throw new TypeError("Invalid type for argument \"onFailure\"");
+        }
 
-  then(onSuccess, onFailure) {
-    return this.perform().then(onSuccess, onFailure);
-  }
+        return this.perform().catch(onFailure);
+    }
 
-  catch(onFailure) {
-    return this.perform().catch(onFailure);
-  }
-
-  _destroy() {
-    this._active = false;
-    this._started = false;
-    this.req = null;
-    this.body = [];
-  }
-
-  perform() {
-    return new Promise((resolve, reject) => {
-      if (!this._started) {
-        this.start();
-      }
-
-      this._active = true;
-
-      this.req.on("error", e => {
-        this.emit("error", e);
-        this.destroy();
-        reject(e);
-      });
-
-      this.req.on("response", res => {
+    _destroy() {
+        this._active = false;
+        this._started = false;
+        this.req = null;
         this.body = [];
-        const responseLength = parseInt(res.headers['content-length']);
-        let curLength = 0;
+    }
 
-        res.on("data", chunk => {
-          this.emit("data", chunk);
-          this.body.push(chunk);
-          if (!isNaN(responseLength)) {
-            curLength += chunk.byteLength;
-            this.emit("progress", curLength / responseLength);
-          }
+    perform() {
+        return new Promise((resolve, reject) => {
+            if (!this._started) {
+                this.start();
+            }
+
+            this._active = true;
+
+            this.req.on("error", e => {
+                this.emit("error", e);
+                this.destroy();
+                reject(e);
+            });
+
+            this.req.on("response", res => {
+                this.body = [];
+                const responseLength = parseInt(res.headers['content-length']);
+                let curLength = 0;
+
+                res.on("data", chunk => {
+                    this.emit("data", chunk);
+                    this.body.push(chunk);
+                    if (!isNaN(responseLength)) {
+                        curLength += chunk.byteLength;
+                        this.emit("progress", curLength / responseLength);
+                    }
+                });
+                
+                res.on("end", () => {
+                    this.emit("end");
+
+                    if (this._options.custom.bodyAsBuffer) {
+                        resolve([Buffer.concat(this.body), res]);
+                    } else {
+                        resolve([Buffer.concat(this.body).toString(), res]);
+                    }
+
+                    this.destroy();
+                    this.emit("close");
+                });
+
+                res.on("error", e => {
+                    this.emit("error", e);
+                    this.destroy();
+                    reject(e);
+                });
+            });
+
+            this.req.end();
         });
-
-        res.on("end", () => {
-          this.emit("end");
-
-          if (this.options.custom.bodyAsBuffer) {
-            resolve([Buffer.concat(this.body), res]);
-          } else {
-            resolve([Buffer.concat(this.body).toString(), res]);
-          }
-
-          this.destroy();
-          this.emit("close");
-        });
-
-        res.on("error", e => {
-          this.emit("error", e);
-          this.destroy();
-          reject(e);
-        });
-      });
-
-      this.req.end();
-    });
-  }
-
-  write(chunk, encoding, callback) {
-    if (!writeMethods.includes(this.options.method)) {
-      throw WriteOnReadOnlyMethodError;
     }
 
-    if (!this._started) {
-      this.start();
-    }
-
-    this.req.write(chunk, encoding, callback);
-    return this;
-  }
-
-  pipe(dest, opt) {
-    Duplex.prototype.pipe.call(this, dest, opt);
-    this._readStreamEnabled = true;
-    return this;
-  }
-
-  _read(size) {}
-  _write(chunk, encoding, callback) {
-    return this.write(chunk, encoding, callback);
-  }
-
-  send(body, encoding, callback) {
-    return this.write(body, encoding, callback).perform();
-  }
-
-  sendForm(form) {
-    if (Object(form) !== form) {
-      throw new Error("Argument passed to sendForm is not an object");
-    }
-
-    const body = Buffer.from(qs.stringify(form), "utf8");
-
-    return this.headers({
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Content-Length": body.byteLength
-    }).send(body);
-  }
-
-  sendMultipart(form, files, filesFieldNameFormat, encoding) {
-    if (form && Object(form) !== form) {
-      throw new Error("First argument (form) passed to sendMultipart is not an object");
-    }
-    if (files && Object(files) !== files) {
-      throw new Error("Second argument (files) passed to sendMultipart is not an object");
-    }
-    if (filesFieldNameFormat && typeof filesFieldNameFormat !== "string") {
-      throw new Error("Third argument (filesFieldNameFormat) passed to sendMultipart is not a string");
-    }
-    if (encoding && (typeof encoding !== "string" || !["base64", "BASE64", "utf8", "UTF8", "utf-8", "UTF-8"].includes(encoding))) {
-      throw new Error("Fourth argument (encoding) passed to sendMultipart is not valid");
-    }
-
-    // define default file field name
-    filesFieldNameFormat = filesFieldNameFormat || "files[%i]";
-
-    // define default encoding
-    encoding = encoding || "utf8";
-    const transferEncoding = (["utf8", "utf-8", "UTF8", "UTF-8"].includes(encoding) ? "default" : encoding);
-
-    // generate random multipart form boundary
-    const boundary = "--------------------------" + crypto.randomBytes(6).toString("hex");
-    let body = Buffer.alloc(0);
-
-    // build multipart form body
-    if (form != null) {
-      Object.keys(form).forEach(fieldName => {
-        if (typeof fieldName !== "string") {
-          throw new Error("Field name is not a string");
+    write(chunk, encoding, callback) {
+        // validate arguments
+        if (typeof chunk !== "string" && !(typeof chunk === "object" && (chunk instanceof Buffer))) {
+            throw new TypeError("Invalid type for argument \"chunk\"");
+        }
+        if (typeof encoding !== "undefined" && encoding !== undefined && typeof encoding !== "string") {
+            throw new TypeError("Invalid type for argument \"encoding\"");
+        }
+        if (typeof callback !== "undefined" && callback !== undefined && typeof callback !== "function") {
+            throw new TypeError("Invalid type for argument \"callback\"");
         }
 
-        let headers = "--" + boundary + "\r\n";
-        if (transferEncoding != "default") {
-          headers += "MIME-Version: 1.0\r\n";
-          headers += "Content-Transfer-Encoding: " + transferEncoding + "\r\n";
+        if (!writeMethods.includes(this._options.method)) {
+            throw WriteOnReadOnlyMethodError;
         }
-        headers += "Content-Disposition: form-data; name=\"" +
-          encodeURIComponent(fieldName) + "\"\r\n\r\n";
 
+        if (!this._started) {
+            this.start();
+        }
+
+        this.req.write(chunk, encoding, callback);
+        return this;
+    }
+
+    pipe(dest, opt) {
+        // validate arguments
+        if (typeof dest !== "object" || !(dest instanceof stream.Writable)) {
+            throw new TypeError("Invalid type for argument \"dest\"");
+        }
+        if (typeof opt !== "undefined" && opt !== undefined && typeof opt !== "object" || Array.isArray(opt)) {
+            throw new TypeError("Invalid type for argument \"opt\"");
+        }
+
+        stream.Duplex.prototype.pipe.call(this, dest, opt);
+        this._readStreamEnabled = true;
+        return this;
+    }
+
+    _read(size) {}
+    _write(chunk, encoding, callback) {
+        // validate arguments
+        if (typeof chunk !== "string" && !(typeof chunk === "object" && (chunk instanceof Buffer))) {
+            throw new TypeError("Invalid type for argument \"chunk\"");
+        }
+        if (typeof encoding !== "undefined" && encoding !== undefined && typeof encoding !== "string") {
+            throw new TypeError("Invalid type for argument \"encoding\"");
+        }
+        if (typeof callback !== "undefined" && callback !== undefined && typeof callback !== "function") {
+            throw new TypeError("Invalid type for argument \"callback\"");
+        }
+
+        return this.write(chunk, encoding, callback);
+    }
+
+    send(body, encoding, callback) {
+        // validate arguments
+        if (typeof body !== "string" && !(typeof body === "object" && (body instanceof Buffer))) {
+            throw new TypeError("Invalid type for argument \"body\"");
+        }
+        if (typeof encoding !== "undefined" && encoding !== undefined && typeof encoding !== "string") {
+            throw new TypeError("Invalid type for argument \"encoding\"");
+        }
+        if (typeof callback !== "undefined" && callback !== undefined && typeof callback !== "function") {
+            throw new TypeError("Invalid type for argument \"callback\"");
+        }
+
+        return this.write(body, encoding, callback).perform();
+    }
+
+    sendForm(form) {
+        if (typeof form !== "object" || Array.isArray(form)) {
+            throw new TypeError("Invalid type for argument \"form\"");
+        }
+
+        const body = Buffer.from(qs.stringify(form), "utf8");
+
+        return this.headers({
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Length": body.byteLength
+        }).send(body);
+    }
+
+    sendMultipart(form, files, filesFieldNameFormat, encoding) {
+        if (typeof form !== "undefined" && form !== undefined && typeof form !== "object") {
+            throw new TypeError("Invalid type for argument \"form\"");
+        }
+        if (typeof files !== "undefined" && files !== undefined && typeof files !== "object") {
+            throw new TypeError("Invalid type for argument \"files\"");
+        }
+        if (typeof filesFieldNameFormat !== "undefined" && filesFieldNameFormat !== undefined &&
+            typeof filesFieldNameFormat !== "string") {
+            throw new TypeError("Invalid type for argument \"filesFieldNameFormat\"");
+        }
+        if (typeof encoding !== "undefined" && encoding !== undefined &&
+            (typeof encoding !== "string" || !["base64", "BASE64", "utf8", "UTF8", "utf-8", "UTF-8"].includes(encoding))) {
+            throw new TypeError("Invalid type for argument \"encoding\"");
+        }
+
+        // define default file field name
+        filesFieldNameFormat = filesFieldNameFormat || "files[%i]";
+
+        // define default encoding
+        encoding = encoding || "utf8";
+        const transferEncoding = (["utf8", "utf-8", "UTF8", "UTF-8"].includes(encoding) ? "default" : encoding);
+
+        // generate random multipart form boundary
+        const boundary = "--------------------------" + crypto.randomBytes(6).toString("hex");
+        let body = Buffer.alloc(0);
+
+        // build multipart form body
+        if (form != null) {
+            Object.keys(form).forEach(fieldName => {
+                if (typeof fieldName !== "string") {
+                    throw new Error("Field name is not a string");
+                }
+
+                let headers = "--" + boundary + "\r\n";
+                if (transferEncoding != "default") {
+                    headers += "MIME-Version: 1.0\r\n";
+                    headers += "Content-Transfer-Encoding: " + transferEncoding + "\r\n";
+                }
+                headers += "Content-Disposition: form-data; name=\"" +
+                encodeURIComponent(fieldName) + "\"\r\n\r\n";
+
+                body = Buffer.concat([
+                    body,
+                    Buffer.from(headers, "utf8"),
+                    transferEncoding != "default" ?
+                    Buffer.from(Buffer.from(form[fieldName]).toString(encoding), "utf8") :
+                    Buffer.from(form[fieldName]),
+                    Buffer.from("\r\n", "utf8")
+                ]);
+            });
+        }
+
+        // build multipart form body
+        if (files != null) {
+            Object.keys(files).forEach((fileName, fileIndex) => {
+                if (typeof fileName !== "string") {
+                    throw new Error("File name is not a string");
+                }
+
+                const fileExt = path.extname(fileName).toLowerCase();
+                const mimeType = mime.hasOwnProperty(fileExt) ? mime[fileExt] : "application/octet-stream";
+
+                let headers = "--" + boundary + "\r\n";
+                if (transferEncoding != "default") {
+                    headers += "MIME-Version: 1.0\r\n";
+                    headers += "Content-Transfer-Encoding: " + transferEncoding + "\r\n";
+                }
+                headers += "Content-Type: " + mimeType + "; charset=utf-8\r\n";
+                headers += "Content-Disposition: form-data; name=\"" +
+                encodeURIComponent((
+                    filesFieldNameFormat.includes("%") ? 
+                    util.format(filesFieldNameFormat, fileIndex) : 
+                    filesFieldNameFormat
+                )) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\r\n\r\n";
+
+                body = Buffer.concat([
+                    body,
+                    Buffer.from(headers, "utf8"),
+                    transferEncoding != "default" ?
+                    Buffer.from(Buffer.from(files[fileName]).toString(encoding), "utf8") :
+                    Buffer.from(files[fileName]),
+                    Buffer.from("\r\n", "utf8")
+                ]);
+            });
+        }
+
+        // append final multipart form boundary
         body = Buffer.concat([
-          body,
-          Buffer.from(headers, "utf8"),
-          transferEncoding != "default" ?
-            Buffer.from(Buffer.from(form[fieldName]).toString(encoding), "utf8") :
-            Buffer.from(form[fieldName]),
-          Buffer.from("\r\n", "utf8")
+            body,
+            Buffer.from("--" + boundary + "--", "utf8")
         ]);
-      });
+
+        return this.headers({
+            "Content-Type": "multipart/form-data; boundary=" + boundary,
+            "Content-Length": body.byteLength
+        }).send(body);
     }
 
-    // build multipart form body
-    if (files != null) {
-      Object.keys(files).forEach((fileName, fileIndex) => {
-        if (typeof fileName !== "string") {
-          throw new Error("File name is not a string");
-        }
+    sendJSON(data) {
+        const body = Buffer.from(JSON.stringify(data), "utf8");
 
-        const fileExt = path.extname(fileName).toLowerCase();
-        const mimeType = mime.hasOwnProperty(fileExt) ? mime[fileExt] : "application/octet-stream";
-
-        let headers = "--" + boundary + "\r\n";
-        if (transferEncoding != "default") {
-          headers += "MIME-Version: 1.0\r\n";
-          headers += "Content-Transfer-Encoding: " + transferEncoding + "\r\n";
-        }
-        headers += "Content-Type: " + mimeType + "; charset=utf-8\r\n";
-        headers += "Content-Disposition: form-data; name=\"" +
-          encodeURIComponent((
-            filesFieldNameFormat.includes("%") ? 
-              util.format(filesFieldNameFormat, fileIndex) : 
-              filesFieldNameFormat
-            )) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\r\n\r\n";
-
-        body = Buffer.concat([
-          body,
-          Buffer.from(headers, "utf8"),
-          transferEncoding != "default" ?
-            Buffer.from(Buffer.from(files[fileName]).toString(encoding), "utf8") :
-            Buffer.from(files[fileName]),
-          Buffer.from("\r\n", "utf8")
-        ]);
-      });
+        return this.headers({
+            "Content-Type": "application/json",
+            "Content-Length": body.byteLength
+        }).send(body);
     }
-
-    // append final multipart form boundary
-    body = Buffer.concat([
-      body,
-      Buffer.from("--" + boundary + "--", "utf8")
-    ]);
-
-    return this.headers({
-      "Content-Type": "multipart/form-data; boundary=" + boundary,
-      "Content-Length": body.byteLength
-    }).send(body);
-  }
-
-  sendJSON(data) {
-    const body = Buffer.from(JSON.stringify(data), "utf8");
-
-    return this.headers({
-      "Content-Type": "application/json",
-      "Content-Length": body.byteLength
-    }).send(body);
-  }
 }
 
-class HTTP {}
+class ES6RequestMethods {}
 
 methods.forEach(method => {
-  HTTP[method.toLowerCase()] = (urlStr, options) => {
-    return new Request(method, urlStr, options);
-  }
+    ES6RequestMethods[method.toLowerCase()] = (urlStr, options) => {
+        return new ES6Request(method, urlStr, options);
+    }
 });
 
-module.exports = HTTP;
+ES6RequestMethods.Errors = {};
+ES6RequestMethods.Errors.InvalidProtocol = InvalidProtocolError;
+ES6RequestMethods.Errors.InvalidMethod = InvalidMethodError;
+ES6RequestMethods.Errors.WriteOnReadOnlyMethod = WriteOnReadOnlyMethodError;
+
+module.exports = ES6RequestMethods;

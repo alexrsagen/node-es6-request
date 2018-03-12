@@ -1,9 +1,11 @@
 # node-es6-request
-HTTP Request library written in ES6 for Node.js
+HTTP Request library written in ES6 for Node.js. Now with TypeScript definitions!
+
+**Warning! Only supports Node.js >=8.0.0** (See "Added in" [here](https://nodejs.org/api/stream.html#stream_writable_destroy_error))
 
 ## Installation
 ```
-npm install es6-request --save
+npm i es6-request
 ```
 
 ## API
@@ -102,7 +104,7 @@ Returns a [&lt;Promise&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScr
 
 ##### `Request`.write(`chunk`[, `encoding`][, `callback`])
 
-* `chunk` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) | [&lt;Buffer&gt;](https://nodejs.org/dist/latest/docs/api/buffer.html#buffer_class_buffer)
+* `chunk` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) | [&lt;Buffer&gt;](https://nodejs.org/api/buffer.html#buffer_class_buffer)
 * `encoding` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)
 * `callback` [&lt;Function&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function)
 
@@ -112,7 +114,7 @@ Returns `Request`
 
 ##### `Request`.send(`chunk`[, `encoding`][, `callback`])
 
-* `chunk` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) | [&lt;Buffer&gt;](https://nodejs.org/dist/latest/docs/api/buffer.html#buffer_class_buffer)
+* `chunk` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type) | [&lt;Buffer&gt;](https://nodejs.org/api/buffer.html#buffer_class_buffer)
 * `encoding` [&lt;string&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#String_type)
 * `callback` [&lt;Function&gt;](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function)
 
