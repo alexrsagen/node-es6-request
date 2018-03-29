@@ -18,6 +18,7 @@ declare module "es6-request" {
         options(obj: Options): ES6Request;
         option(key: string, value: any): ES6Request;
         query(key: string, value: string): ES6Request;
+        query(params: object): ES6Request;
         start(): ES6Request;
         then(onSuccess?: (data: [string | Buffer, http.IncomingMessage]) => any, onFailure?: (err: Error) => any): Promise<any>;
         catch(onFailure?: (err: Error) => any): Promise<any>;

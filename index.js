@@ -126,16 +126,19 @@ class ES6Request extends stream.Duplex {
     
     query(key, value) {
         // validate arguments
-        if (typeof key !== "string") {
-            throw new TypeError("Invalid type for argument \"key\"");
-        }
-        if (typeof value !== "string") {
-            throw new TypeError("Invalid type for argument \"value\"");
-        }
-
-        if (Object(key) == key) {
+        if (typeof key === "object" && !Array.isArray(key)) {
+            if (typeof value !== "undefined" || value !== undefined) {
+                throw new TypeError("Invalid type for argument \"value\"");
+            }
             Object.assign(this.qs, key);
         } else {
+            if (typeof key !== "string") {
+                throw new TypeError("Invalid type for argument \"key\"");
+            }
+            if (typeof value !== "string") {
+                throw new TypeError("Invalid type for argument \"value\"");
+            }
+
             this.qs[key] = value;
         }
 
