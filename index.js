@@ -214,11 +214,15 @@ class ES6Request extends stream.Duplex {
 
             this._active = true;
 
-            this.req.on("error", e => {
-                this.emit("error", e);
+            const errorListener = e => {
+                this.removeListener("error", errorListener);
                 this.destroy();
                 reject(e);
-            });
+            };
+
+            this.on("error", errorListener);
+            this.req.on("error", e => this.emit("error", e));
+            this.on("close", () => this.removeListener("error", errorListener));
 
             this.req.on("response", res => {
                 this.body = [];
@@ -247,11 +251,7 @@ class ES6Request extends stream.Duplex {
                     this.emit("close");
                 });
 
-                res.on("error", e => {
-                    this.emit("error", e);
-                    this.destroy();
-                    reject(e);
-                });
+                res.on("error", e => this.emit("error", e));
             });
 
             this.req.end();
