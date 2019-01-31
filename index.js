@@ -51,7 +51,8 @@ class ES6Request extends stream.Duplex {
             method: method,
             headers: {},
             custom: {
-                bodyAsBuffer: false
+                bodyAsBuffer: false,
+                returnBody: true
             }
         }, options);
 
@@ -231,7 +232,9 @@ class ES6Request extends stream.Duplex {
 
                 res.on("data", chunk => {
                     this.emit("data", chunk);
-                    this.body.push(chunk);
+                    if (this._options.custom.returnBody) {
+                        this.body.push(chunk);
+                    }
                     if (!isNaN(responseLength)) {
                         curLength += chunk.byteLength;
                         this.emit("progress", curLength / responseLength);
@@ -241,10 +244,14 @@ class ES6Request extends stream.Duplex {
                 res.on("end", () => {
                     this.emit("end");
 
-                    if (this._options.custom.bodyAsBuffer) {
-                        resolve([Buffer.concat(this.body), res]);
+                    if (this._options.custom.returnBody) {
+                        if (this._options.custom.bodyAsBuffer) {
+                            resolve([Buffer.concat(this.body), res]);
+                        } else {
+                            resolve([Buffer.concat(this.body).toString(), res]);
+                        }
                     } else {
-                        resolve([Buffer.concat(this.body).toString(), res]);
+                        resolve([null, res]);
                     }
 
                     this.destroy();
@@ -278,8 +285,7 @@ class ES6Request extends stream.Duplex {
             this.start();
         }
 
-        this.req.write(chunk, encoding, callback);
-        return this;
+        return this.req.write(chunk, encoding, callback);
     }
 
     pipe(dest, opt) {
