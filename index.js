@@ -285,8 +285,7 @@ class ES6Request extends stream.Duplex {
             this.start();
         }
 
-        this.req.write(chunk, encoding, callback);
-        return this;
+        return this.req.write(chunk, encoding, callback);
     }
 
     pipe(dest, opt) {
