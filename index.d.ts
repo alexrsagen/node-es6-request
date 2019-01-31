@@ -13,30 +13,30 @@ declare module "es6-request" {
     
     type BodyType = string | Buffer;
 
-    class ES6Request {
+    class ES6Request extends stream.Duplex {
         req: http.ClientRequest;
 
-        headers(obj: http.OutgoingHttpHeaders): ES6Request;
-        header(key: string, value: number | string | string[] | undefined): ES6Request;
-        authBasic(username: string, password: string): ES6Request;
-        authBearer(bearer: string): ES6Request;
-        options(obj: Options): ES6Request;
-        option(key: string, value: any): ES6Request;
-        query(key: string, value: string): ES6Request;
-        query(params: object): ES6Request;
-        start(): ES6Request;
+        headers(obj: http.OutgoingHttpHeaders): this;
+        header(key: string, value: number | string | string[] | undefined): this;
+        authBasic(username: string, password: string): this;
+        authBearer(bearer: string): this;
+        options(obj: Options): this;
+        option(key: string, value: any): this;
+        query(key: string, value: string): this;
+        query(params: object): this;
+        start(): this;
         then(onSuccess?: (data: [string | Buffer, http.IncomingMessage]) => any, onFailure?: (err: Error) => any): Promise<any>;
         catch(onFailure?: (err: Error) => any): Promise<any>;
-        destroy(error?: Error): ES6Request;
+        destroy(error?: Error): this;
         perform(): Promise<[string | Buffer, http.IncomingMessage]>;
         perform<T extends BodyType>(): Promise<[T, http.IncomingMessage]>;
-        on(event: "error", listener: (err: Error) => void): ES6Request;
-        on(event: "data", listener: (chunk: Buffer) => void): ES6Request;
-        on(event: "progress", listener: (progress: number, current: number, total: number) => void): ES6Request;
-        on(event: "end", listener: () => void): ES6Request;
-        on(event: "close", listener: () => void): ES6Request;
-        write(chunk: string | Buffer, encoding?: string, callback?: Function): ES6Request;
-        pipe(dest: stream.Writable, opt?: object): ES6Request;
+        on(event: "error", listener: (err: Error) => void): this;
+        on(event: "data", listener: (chunk: Buffer) => void): this;
+        on(event: "progress", listener: (progress: number, current: number, total: number) => void): this;
+        on(event: "end", listener: () => void): this;
+        on(event: "close", listener: () => void): this;
+        on(event: string | symbol, listener: (...args: any[]) => void): this;
+        pipe(dest: stream.Writable, opt?: object): this;
         send(body: string | Buffer, encoding?: string, callback?: Function): Promise<any>;
         sendForm(form: object): Promise<any>;
         sendMultipart(form: object | null, files: object | null, filesFieldNameFormat?: string, encoding?: string): Promise<any>;
