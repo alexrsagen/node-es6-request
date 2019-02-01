@@ -330,7 +330,8 @@ class ES6Request extends stream.Duplex {
             throw new TypeError("Invalid type for argument \"callback\"");
         }
 
-        return this.write(body, encoding, callback).perform();
+        this.write(body, encoding, callback);
+        return this.perform();
     }
 
     sendForm(form) {
