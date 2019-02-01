@@ -12,6 +12,7 @@ declare module "es6-request" {
     }
     
     type BodyType = string | Buffer;
+    type PerformReturn = [BodyType, http.IncomingMessage];
 
     class ES6Request extends stream.Duplex {
         req: http.ClientRequest;
@@ -25,10 +26,10 @@ declare module "es6-request" {
         query(key: string, value: string): this;
         query(params: object): this;
         start(): this;
-        then(onSuccess?: (data: [string | Buffer, http.IncomingMessage]) => any, onFailure?: (err: Error) => any): Promise<any>;
+        then(onSuccess?: (data: PerformReturn) => any, onFailure?: (err: Error) => any): Promise<any>;
         catch(onFailure?: (err: Error) => any): Promise<any>;
         destroy(error?: Error): this;
-        perform(): Promise<[string | Buffer, http.IncomingMessage]>;
+        perform(): Promise<PerformReturn>;
         perform<T extends BodyType>(): Promise<[T, http.IncomingMessage]>;
         on(event: "error", listener: (err: Error) => void): this;
         on(event: "data", listener: (chunk: Buffer) => void): this;
@@ -37,10 +38,10 @@ declare module "es6-request" {
         on(event: "close", listener: () => void): this;
         on(event: string | symbol, listener: (...args: any[]) => void): this;
         pipe(dest: stream.Writable, opt?: object): this;
-        send(body: string | Buffer, encoding?: string, callback?: Function): Promise<any>;
-        sendForm(form: object): Promise<any>;
-        sendMultipart(form: object | null, files: object | null, filesFieldNameFormat?: string, encoding?: string): Promise<any>;
-        sendJSON(data?: any): Promise<any>;
+        send(body: string | Buffer, encoding?: string, callback?: Function): Promise<PerformReturn>;
+        sendForm(form: object): Promise<PerformReturn>;
+        sendMultipart(form: object | null, files: object | null, filesFieldNameFormat?: string, encoding?: string): Promise<PerformReturn>;
+        sendJSON(data?: any): Promise<PerformReturn>;
     }
 
     interface CustomError extends Error {
