@@ -237,7 +237,7 @@ class ES6Request extends stream.Duplex {
                     }
                     if (!isNaN(responseLength)) {
                         curLength += chunk.byteLength;
-                        this.emit("progress", curLength / responseLength);
+                        this.emit("progress", curLength / responseLength, curLength, responseLength);
                     }
                 });
                 
