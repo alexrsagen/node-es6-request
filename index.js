@@ -45,7 +45,7 @@ class ES6Request extends stream.Duplex {
         this.url = url.parse(urlStr);
 
         // create base options object
-        this._options = Object.assign({
+        this._options = {
             hostname: this.url.hostname,
             path: this.url.pathname,
             method: method,
@@ -54,7 +54,10 @@ class ES6Request extends stream.Duplex {
                 bodyAsBuffer: false,
                 returnBody: true
             }
-        }, options);
+        };
+        if (typeof options !== "undefined" && options !== undefined) {
+            this.options(options);
+        }
 
         this.qs = qs.parse(this.url.query) || {};
 
@@ -111,7 +114,21 @@ class ES6Request extends stream.Duplex {
             throw new TypeError("Invalid type for argument \"obj\"");
         }
 
-        Object.assign(this._options, obj);
+        for (let key of ['hostname', 'path', 'method']) {
+            if (obj.hasOwnProperty(key)) {
+                this._options[key] = obj[key];
+            }
+        }
+        for (let key of ['headers', 'custom']) {
+            if (obj.hasOwnProperty(key)) {
+                this._options[key] = Object.assign(this._options[key], obj[key]);
+            }
+        }
+        for (let key of obj) {
+            if (!['hostname', 'path', 'method', 'headers', 'custom'].includes(key)) {
+                this._options[key] = obj[key];
+            }
+        }
         return this;
     }
 
