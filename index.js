@@ -21,6 +21,9 @@ InvalidMethodError.code = "invalid_method";
 var WriteOnReadOnlyMethodError = new Error("Write on read-only method");
 WriteOnReadOnlyMethodError.code = "write_on_read_method";
 
+var InvalidResponseLengthError = new Error("Invalid response length");
+InvalidResponseLengthError.code = "invalid_response_length";
+
 class ES6Request extends stream.Duplex {
     constructor(method, urlStr, options) {
         // validate arguments
@@ -63,7 +66,7 @@ class ES6Request extends stream.Duplex {
 
         return this;
     }
-    
+
     headers(obj) {
         // validate arguments
         if (typeof obj !== "object" || Array.isArray(obj)) {
@@ -73,7 +76,7 @@ class ES6Request extends stream.Duplex {
         Object.assign(this._options.headers, obj);
         return this;
     }
-    
+
     header(key, value) {
         // validate arguments
         if (typeof key !== "string") {
@@ -86,7 +89,7 @@ class ES6Request extends stream.Duplex {
         this._options.headers[key] = value;
         return this;
     }
-    
+
     authBasic(username, password) {
         // validate arguments
         if (typeof username !== "string") {
@@ -98,7 +101,7 @@ class ES6Request extends stream.Duplex {
 
         return this.header("Authorization", "Basic " + Buffer.from(username + ":" + password, "utf8").toString("base64"));
     }
-    
+
     authBearer(bearer) {
         // validate arguments
         if (typeof bearer !== "string") {
@@ -107,7 +110,7 @@ class ES6Request extends stream.Duplex {
 
         return this.header("Authorization", "Bearer " + bearer);
     }
-    
+
     options(obj) {
         // validate arguments
         if (typeof obj !== "object" || Array.isArray(obj)) {
@@ -141,7 +144,7 @@ class ES6Request extends stream.Duplex {
         this._options[key] = value;
         return this;
     }
-    
+
     query(key, value) {
         // validate arguments
         if (typeof key === "object" && !Array.isArray(key)) {
@@ -162,7 +165,7 @@ class ES6Request extends stream.Duplex {
 
         return this;
     }
-    
+
     start() {
         if (this._started) return this;
 
@@ -244,20 +247,29 @@ class ES6Request extends stream.Duplex {
 
             this.req.on("response", res => {
                 this.body = [];
-                const responseLength = parseInt(res.headers['content-length']);
+                let hasResponseLength = res.headers.hasOwnProperty('content-length');
+                let responseLength = 0;
                 let curLength = 0;
+                if (hasResponseLength) {
+                    responseLength = parseInt(res.headers['content-length']);
+                    hasResponseLength = !isNaN(responseLength);
+                }
 
                 res.on("data", chunk => {
+                    if (hasResponseLength && curLength + chunk.length > responseLength) {
+                        this.emit('error', InvalidResponseLengthError);
+                        return;
+                    }
                     this.emit("data", chunk);
                     if (this._options.custom.returnBody) {
                         this.body.push(chunk);
                     }
-                    if (!isNaN(responseLength)) {
-                        curLength += chunk.byteLength;
+                    if (hasResponseLength) {
+                        curLength += chunk.length;
                         this.emit("progress", curLength / responseLength, curLength, responseLength);
                     }
                 });
-                
+
                 res.on("end", () => {
                     this.emit("end");
 
@@ -360,7 +372,7 @@ class ES6Request extends stream.Duplex {
 
         return this.headers({
             "Content-Type": "application/x-www-form-urlencoded",
-            "Content-Length": body.byteLength
+            "Content-Length": body.length
         }).send(body);
     }
 
@@ -435,8 +447,8 @@ class ES6Request extends stream.Duplex {
                 headers += "Content-Type: " + mimeType + "; charset=utf-8\r\n";
                 headers += "Content-Disposition: form-data; name=\"" +
                 encodeURIComponent((
-                    filesFieldNameFormat.includes("%") ? 
-                    util.format(filesFieldNameFormat, fileIndex) : 
+                    filesFieldNameFormat.includes("%") ?
+                    util.format(filesFieldNameFormat, fileIndex) :
                     filesFieldNameFormat
                 )) + "\"; filename=\"" + encodeURIComponent(fileName) + "\"\r\n\r\n";
 
@@ -459,7 +471,7 @@ class ES6Request extends stream.Duplex {
 
         return this.headers({
             "Content-Type": "multipart/form-data; boundary=" + boundary,
-            "Content-Length": body.byteLength
+            "Content-Length": body.length
         }).send(body);
     }
 
@@ -468,7 +480,7 @@ class ES6Request extends stream.Duplex {
 
         return this.headers({
             "Content-Type": "application/json",
-            "Content-Length": body.byteLength
+            "Content-Length": body.length
         }).send(body);
     }
 }
