@@ -117,21 +117,14 @@ class ES6Request extends stream.Duplex {
             throw new TypeError("Invalid type for argument \"obj\"");
         }
 
-        for (let key of ['hostname', 'path', 'method']) {
-            if (obj.hasOwnProperty(key)) {
-                this._options[key] = obj[key];
+        for (let [key, value] of Object.entries(obj)) {
+            if (key === 'headers' || key === 'custom') {
+                this._options[key] = Object.assign(this._options[key], value);
+            } else {
+                this._options[key] = value;
             }
         }
-        for (let key of ['headers', 'custom']) {
-            if (obj.hasOwnProperty(key)) {
-                this._options[key] = Object.assign(this._options[key], obj[key]);
-            }
-        }
-        for (let key of obj) {
-            if (!['hostname', 'path', 'method', 'headers', 'custom'].includes(key)) {
-                this._options[key] = obj[key];
-            }
-        }
+
         return this;
     }
 
