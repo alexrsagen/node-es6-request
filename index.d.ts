@@ -37,7 +37,7 @@ declare module "es6-request" {
         on(event: "end", listener: () => void): this;
         on(event: "close", listener: () => void): this;
         on(event: string | symbol, listener: (...args: any[]) => void): this;
-        pipe(dest: stream.Writable, opt?: object): this;
+        pipe<T extends NodeJS.WritableStream>(destination: T, options?: { end?: boolean; }): T;
         send(body: string | Buffer, encoding?: string, callback?: Function): Promise<PerformReturn>;
         sendForm(form: object): Promise<PerformReturn>;
         sendMultipart(form: object | null, files: object | null, filesFieldNameFormat?: string, encoding?: string): Promise<PerformReturn>;
